@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+#
+# XBar menu plugin for lima
+#
+# Copyright 2021, Joe Block <jpb@unixorn.net>
+#
+# <xbar.title>Lima Control</xbar.title>
+# <xbar.version>v1.0</xbar.version>
+# <xbar.author>Joe Block</xbar.author>
+# <xbar.author.github>unixorn</xbar.author.github>
+# <xbar.desc>Control Lima VM</xbar.desc>
+# <xbar.dependencies>Lima</xbar.dependencies>
+# <xbar.image>http://i.imgur.com/nQ6LzvZ.png</xbar.image>
+#
+# Dependencies: 
+#   lima - https://github.com/lima-vm/lima
+
+# InService output color (default green)
+RUNNING_VM_COLOR="#29cc00"
+
+# OutOfService output color (default red)
+STOPPED_VM_COLOR="#ff0033"
+
+set -o pipefail
+if [[ -n "$DEBUG" ]]; then
+  set -x
+fi
+
+function cleanup() {
+  if [[ -d "$SCRATCH_D" ]]; then
+    rm -fr "$SCRATCH_D"
+  fi
+}
+
+function debug() {
+  if [[ -n "$DEBUG" ]]; then
+    echo "$@"
+  fi
+}
+
+function fail() {
+  printf '%s\n' "$1" >&2  ## Send message to stderr. Exclude >&2 if you don't want it that way.
+  exit "${2-1}"  ## Return a code specified by $2 or 1 by default.
+}
+
+function has() {
+  # Check if a command is in $PATH
+  which "$@" > /dev/null 2>&1
+}
+
+# Set up a working scratch directory
+SCRATCH_D=$(mktemp -d)
+
+if [[ ! "$SCRATCH_D" || ! -d "$SCRATCH_D" ]]; then
+  echo "Could not create temp dir"
+  exit 1
+fi
+
+trap cleanup EXIT
+
+export PATH="$PATH:/usr/local/bin"
+XBAR_PLUGIN="$0"
+
+logger -t 'limamenu' "RUNNING_VM_COLOR=$RUNNING_VM_COLOR"
+logger -t 'limamenu' "STOPPED_VM_COLOR=$STOPPED_VM_COLOR"
+logger -t 'limamenu' "XBAR_PLUGIN=$XBAR_PLUGIN"
+
+function printMenu() {
+  # Bar title
+  menuBarColor="$STOPPED_VM_COLOR"
+  for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
+  do
+    vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
+    if [[ "$vmstatus" == 'Running' ]]; then
+      menuBarColor="$RUNNING_VM_COLOR"
+    fi
+  done
+  echo "lima | color=$menuBarColor"
+  echo '---'
+
+  for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
+  do
+    vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
+    if [[ "$vmstatus" == 'Running' ]]; then
+      menuItem="$limavm running - stop it | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$limavm terminal=false refresh=true"
+    else
+      menuItem="$limavm stopped - start it | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$limavm terminal=false refresh=true"
+    fi
+    echo "$menuItem"
+  done
+  echo "force rescan | bash=limactl param1=list terminal=false refresh=true"
+}
+
+function processMenuCommand() {
+  case "$1" in
+    start)
+      logger -t 'limamenu' "Starting $2"
+      limactl start "$2"
+    ;;
+    stop)
+      logger -t 'limamenu' "Stopping $2"
+      limactl stop "$2"
+    ;;
+  esac
+}
+
+printMenu
+processMenuCommand "$@"
