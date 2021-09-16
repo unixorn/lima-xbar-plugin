@@ -105,4 +105,4 @@ function processMenuCommand() {
 }
 
 printMenu
-processMenuCommand $@
+processMenuCommand "$@"
