@@ -82,9 +82,9 @@ function printMenu() {
   do
     vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
     if [[ "$vmstatus" == 'Running' ]]; then
-      menuItem="$limavm running - stop it | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$limavm terminal=false"
+      menuItem="$limavm running - stop it | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$limavm terminal=false refresh=true"
     else
-      menuItem="$limavm stopped - start it | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$limavm terminal=false"
+      menuItem="$limavm stopped - start it | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$limavm terminal=false refresh=true"
     fi
     echo "$menuItem"
   done
