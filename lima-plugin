@@ -59,18 +59,49 @@ fi
 trap cleanup EXIT
 
 export PATH="$PATH:/usr/local/bin"
+XBAR_PLUGIN="$0"
 
-status=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $2 }')
-if [[ "$status" == 'Running' ]]; then
-  mainColor="$RUNNING_VM_COLOR"
-  mainDesc="lima running"
-else
-  mainColor="$STOPPED_VM_COLOR"
-  mainDesc="lima stopped"
-fi
+logger -t 'limamenu' "RUNNING_VM_COLOR=$RUNNING_VM_COLOR"
+logger -t 'limamenu' "STOPPED_VM_COLOR=$STOPPED_VM_COLOR"
+logger -t 'limamenu' "XBAR_PLUGIN=$XBAR_PLUGIN"
 
-# Output
-echo "$mainDesc | color=$mainColor"
-echo "---"
-echo "In: $in | color=$RUNNING_VM_COLOR"
-echo "Out: $out | color=$STOPPED_VM_COLOR"
+function printMenu() {
+  # Bar title
+  menuBarColor="$STOPPED_VM_COLOR"
+  for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
+  do
+    vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
+    if [[ "$vmstatus" == 'Running' ]]; then
+      menuBarColor="$RUNNING_VM_COLOR"
+    fi
+  done
+  echo "lima | color=$menuBarColor"
+  echo '---'
+
+  for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
+  do
+    vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
+    if [[ "$vmstatus" == 'Running' ]]; then
+      menuItem="$limavm running - stop it | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$limavm terminal=false"
+    else
+      menuItem="$limavm stopped - start it | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$limavm terminal=false"
+    fi
+    echo "$menuItem"
+  done
+}
+
+function processMenuCommand() {
+  case "$1" in
+    start)
+      logger -t 'limamenu' "Starting $2"
+      limactl start "$2"
+    ;;
+    stop)
+      logger -t 'limamenu' "Stopping $2"
+      limactl stop "$2"
+    ;;
+  esac
+}
+
+printMenu
+processMenuCommand $@
