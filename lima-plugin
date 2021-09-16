@@ -3,6 +3,17 @@
 # XBar menu plugin for lima
 #
 # Copyright 2021, Joe Block <jpb@unixorn.net>
+#
+# <xbar.title>Lima Control</xbar.title>
+# <xbar.version>v1.0</xbar.version>
+# <xbar.author>Joe Block</xbar.author>
+# <xbar.author.github>unixorn</xbar.author.github>
+# <xbar.desc>Control Lima VM</xbar.desc>
+# <xbar.dependencies>Lima</xbar.dependencies>
+# <xbar.image>http://i.imgur.com/nQ6LzvZ.png</xbar.image>
+#
+# Dependencies: 
+#   lima - https://github.com/lima-vm/lima
 
 set -o pipefail
 if [[ -n "$DEBUG" ]]; then
@@ -41,3 +52,12 @@ fi
 
 trap cleanup EXIT
 
+export PATH="$PATH:/usr/local/bin"
+
+status=$(limactl status | grep default)
+
+# Output
+echo "lima status $status"
+echo "---"
+echo "In: $in | color=$IN_SERVICE_COLOR"
+echo "Out: $out | color=$OUT_SERVICE_COLOR"
