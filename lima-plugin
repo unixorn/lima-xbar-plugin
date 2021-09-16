@@ -15,6 +15,12 @@
 # Dependencies: 
 #   lima - https://github.com/lima-vm/lima
 
+# InService output color (default green)
+RUNNING_VM_COLOR="#29cc00"
+
+# OutOfService output color (default red)
+STOPPED_VM_COLOR="#ff0033"
+
 set -o pipefail
 if [[ -n "$DEBUG" ]]; then
   set -x
@@ -54,10 +60,17 @@ trap cleanup EXIT
 
 export PATH="$PATH:/usr/local/bin"
 
-status=$(limactl status | grep default)
+status=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $2 }')
+if [[ "$status" == 'Running' ]]; then
+  mainColor="$RUNNING_VM_COLOR"
+  mainDesc="lima running"
+else
+  mainColor="$STOPPED_VM_COLOR"
+  mainDesc="lima stopped"
+fi
 
 # Output
-echo "lima status $status"
+echo "$mainDesc | color=$mainColor"
 echo "---"
-echo "In: $in | color=$IN_SERVICE_COLOR"
-echo "Out: $out | color=$OUT_SERVICE_COLOR"
+echo "In: $in | color=$RUNNING_VM_COLOR"
+echo "Out: $out | color=$STOPPED_VM_COLOR"
