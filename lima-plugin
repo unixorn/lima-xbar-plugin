@@ -75,7 +75,7 @@ function printMenu() {
       menuBarColor="$RUNNING_VM_COLOR"
     fi
   done
-  echo "lima | color=$menuBarColor"
+  echo "🐋 | color=$menuBarColor"
   echo '---'
 
   for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
