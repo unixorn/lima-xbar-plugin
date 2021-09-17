@@ -10,7 +10,7 @@
 # <xbar.author.github>unixorn</xbar.author.github>
 # <xbar.desc>Control Lima VM</xbar.desc>
 # <xbar.dependencies>Lima</xbar.dependencies>
-# <xbar.image>http://i.imgur.com/nQ6LzvZ.png</xbar.image>
+# <xbar.image>https://raw.githubusercontent.com/unixorn/lima-xbar-plugin/main/pix/limactl-screen-shot.png</xbar.image>
 #
 # Dependencies: 
 #   lima - https://github.com/lima-vm/lima
