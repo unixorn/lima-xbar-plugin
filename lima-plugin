@@ -67,28 +67,29 @@ logger -t 'limamenu' "XBAR_PLUGIN=$XBAR_PLUGIN"
 
 function printMenu() {
   # Bar title
-  menuBarColor="$STOPPED_VM_COLOR"
+  menuBarIcon="🐋 ⛔ | color=$STOPPED_VM_COLOR"
   for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
   do
     vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
     if [[ "$vmstatus" == 'Running' ]]; then
-      menuBarColor="$RUNNING_VM_COLOR"
+      menuBarIcon="🐋 🏃 | color=$RUNNING_VM_COLOR"
     fi
   done
-  echo "lima | color=$menuBarColor"
+  echo "$menuBarIcon"
   echo '---'
 
   for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
   do
     vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
     if [[ "$vmstatus" == 'Running' ]]; then
-      menuItem="$limavm running - stop it | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$limavm terminal=false refresh=true"
+      menuItem="$limavm VM is running - ⛔ | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$limavm terminal=false refresh=true"
     else
-      menuItem="$limavm stopped - start it | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$limavm terminal=false refresh=true"
+      menuItem="$limavm VM is stopped - ▶️ | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$limavm terminal=false refresh=true"
     fi
     echo "$menuItem"
   done
   echo "force rescan | bash=limactl param1=list terminal=false refresh=true"
+  echo "Lima home | href=https://github.com/lima-vm/lima"
 }
 
 function processMenuCommand() {
@@ -104,5 +105,16 @@ function processMenuCommand() {
   esac
 }
 
-printMenu
-processMenuCommand "$@"
+function warnLimactlIsMissing() {
+  echo "🐋 ❌ | color=$STOPPED_VM_COLOR"
+  echo '---'
+  echo "limactl is not in your PATH! | color=$STOPPED_VM_COLOR"
+  echo "Lima home | href=https://github.com/lima-vm/lima"
+}
+
+if has limactl; then
+  printMenu
+  processMenuCommand "$@"
+else
+  warnLimactlIsMissing
+fi
