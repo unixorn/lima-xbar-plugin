@@ -14,11 +14,12 @@
 #
 # Dependencies: 
 #   lima - https://github.com/lima-vm/lima
+#   jq - https://stedolan.github.io/jq/
 
-# InService output color (default green)
+# Running VM color (default green)
 RUNNING_VM_COLOR="#29cc00"
 
-# OutOfService output color (default red)
+# Stopped VM color (default red)
 STOPPED_VM_COLOR="#ff0033"
 
 set -o pipefail
@@ -65,7 +66,28 @@ logger -t 'limamenu' "RUNNING_VM_COLOR=$RUNNING_VM_COLOR"
 logger -t 'limamenu' "STOPPED_VM_COLOR=$STOPPED_VM_COLOR"
 logger -t 'limamenu' "XBAR_PLUGIN=$XBAR_PLUGIN"
 
+# shellcheck disable=SC2059
+function warnIfMissingDependencies() {
+  local depsOK=1
+  local warnings=""
+  if ! has limactl; then
+    warnings=$(printf "${warnings}limactl is not in your PATH! - click to get started | color=$STOPPED_VM_COLOR href=https://github.com/lima-vm/lima#getting-started\n")
+    depsOK=0
+  fi
+  if ! has jq; then
+    warnings=$(printf "${warnings}\njq is not in your PATH! - click for installation instructions | color=$STOPPED_VM_COLOR href=https://stedolan.github.io/jq/download/\n")
+    depsOK=0
+  fi
+  if [[ depsOK -eq 0 ]]; then
+    echo "🐋 ⛔ | color=$STOPPED_VM_COLOR"
+    echo '---'
+    echo "$warnings"
+    exit 0
+  fi
+}
+
 function printMenu() {
+  warnIfMissingDependencies
   # Bar title
   menuBarIcon="🐋 ⛔ | color=$STOPPED_VM_COLOR"
   for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
@@ -105,16 +127,5 @@ function processMenuCommand() {
   esac
 }
 
-function warnLimactlIsMissing() {
-  echo "🐋 ❌ | color=$STOPPED_VM_COLOR"
-  echo '---'
-  echo "limactl is not in your PATH! | color=$STOPPED_VM_COLOR"
-  echo "Lima home | href=https://github.com/lima-vm/lima"
-}
-
-if has limactl; then
-  printMenu
-  processMenuCommand "$@"
-else
-  warnLimactlIsMissing
-fi
+printMenu
+processMenuCommand "$@"
