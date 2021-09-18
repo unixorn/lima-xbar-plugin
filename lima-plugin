@@ -9,8 +9,9 @@
 # <xbar.author>Joe Block</xbar.author>
 # <xbar.author.github>unixorn</xbar.author.github>
 # <xbar.desc>Control Lima VM</xbar.desc>
-# <xbar.dependencies>Lima</xbar.dependencies>
+# <xbar.dependencies>jq,lima</xbar.dependencies>
 # <xbar.image>https://raw.githubusercontent.com/unixorn/lima-xbar-plugin/main/pix/limactl-screen-shot.png</xbar.image>
+# <xbar.abouturl>https://github.com/unixorn/lima-xbar-plugin/</xbar.abouturl>
 #
 # Dependencies: 
 #   lima - https://github.com/lima-vm/lima
@@ -101,6 +102,7 @@ function printMenuBarIcon() {
   echo '---'
 }
 
+# shellcheck disable=SC2059
 function printMenu() {
   warnIfMissingDependencies
 
@@ -114,11 +116,12 @@ function printMenu() {
     name=$(echo "$raw"| jq -r '.name' )
     vmstatus=$(echo "$raw" | jq -r '.status')
     if [[ $vmstatus == 'Running' ]]; then
-      menuItem="$name VM is running - ⛔ | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$name terminal=false refresh=true"
+      echo "$name VM is running | color=$RUNNING_VM_COLOR"
+      echo "--⛔ Stop $name VM | bash=$XBAR_PLUGIN param1=stop param2=$name terminal=false refresh=true"
     else
-      menuItem="$name VM is stopped - ▶️ | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$name terminal=false refresh=true"
+      echo "$name VM is stopped | color=$STOPPED_VM_COLOR"
+      echo "--▶️ Start $name VM | bash=$XBAR_PLUGIN param1=start param2=$name terminal=false refresh=true"
     fi
-    echo "$menuItem"
   done
 
   echo "force rescan | bash=limactl param1=list terminal=false refresh=true"
