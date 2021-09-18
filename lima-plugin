@@ -91,10 +91,13 @@ function printMenuBarIcon() {
   local limaStatus
   local menuBarIcon
   menuBarIcon="🐋 ⛔ | color=$STOPPED_VM_COLOR"
-  limaStatus="$(limactl list --json | jq -r '.status')"
-  if [[ "$limaStatus" == 'Running' ]]; then
-    menuBarIcon="🐋 🏃 | color=$RUNNING_VM_COLOR"
-  fi
+
+  for vm in $(limactl list --json | jq -r '.status')
+  do
+    if [[ "$vm" == 'Running' ]]; then
+      menuBarIcon="🐋 🏃 | color=$RUNNING_VM_COLOR"
+    fi
+  done
   echo "$menuBarIcon"
   echo '---'
 }
@@ -104,15 +107,19 @@ function printMenu() {
 
   printMenuBarIcon
 
-  for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
+  local name
+  local vmstatus
+
+  for raw in $(limactl list --json)
   do
-    vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
-    if [[ "$vmstatus" == 'Running' ]]; then
-      menuItem="$limavm VM is running - ⛔ | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$limavm terminal=false refresh=true"
+    name=$(echo $raw | jq -r '.name' )
+    vmstatus=$(echo $raw | jq -r '.status')
+    if [[ $vmstatus == 'Running' ]]; then
+      menuItem="$name VM is running - ⛔ | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$name terminal=false refresh=true"
     else
-      menuItem="$limavm VM is stopped - ▶️ | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$limavm terminal=false refresh=true"
+      menuItem="$name VM is stopped - ▶️ | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$name terminal=false refresh=true"
     fi
-    echo "$menuItem"
+    echo $menuItem
   done
 
   echo "force rescan | bash=limactl param1=list terminal=false refresh=true"
