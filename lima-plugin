@@ -88,7 +88,6 @@ function warnIfMissingDependencies() {
 
 function printMenuBarIcon() {
   # Bar title
-  local limaStatus
   local menuBarIcon
   menuBarIcon="🐋 ⛔ | color=$STOPPED_VM_COLOR"
 
@@ -112,14 +111,14 @@ function printMenu() {
 
   for raw in $(limactl list --json)
   do
-    name=$(echo $raw | jq -r '.name' )
-    vmstatus=$(echo $raw | jq -r '.status')
+    name=$(echo "$raw"| jq -r '.name' )
+    vmstatus=$(echo "$raw" | jq -r '.status')
     if [[ $vmstatus == 'Running' ]]; then
       menuItem="$name VM is running - ⛔ | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$name terminal=false refresh=true"
     else
       menuItem="$name VM is stopped - ▶️ | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$name terminal=false refresh=true"
     fi
-    echo $menuItem
+    echo "$menuItem"
   done
 
   echo "force rescan | bash=limactl param1=list terminal=false refresh=true"
