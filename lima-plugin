@@ -86,19 +86,23 @@ function warnIfMissingDependencies() {
   fi
 }
 
-function printMenu() {
-  warnIfMissingDependencies
+function printMenuBarIcon() {
   # Bar title
+  local limaStatus
+  local menuBarIcon
   menuBarIcon="🐋 ⛔ | color=$STOPPED_VM_COLOR"
-  for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
-  do
-    vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
-    if [[ "$vmstatus" == 'Running' ]]; then
-      menuBarIcon="🐋 🏃 | color=$RUNNING_VM_COLOR"
-    fi
-  done
+  limaStatus="$(limactl list --json | jq -r '.status')"
+  if [[ "$limaStatus" == 'Running' ]]; then
+    menuBarIcon="🐋 🏃 | color=$RUNNING_VM_COLOR"
+  fi
   echo "$menuBarIcon"
   echo '---'
+}
+
+function printMenu() {
+  warnIfMissingDependencies
+
+  printMenuBarIcon
 
   for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
   do
@@ -110,8 +114,10 @@ function printMenu() {
     fi
     echo "$menuItem"
   done
+
   echo "force rescan | bash=limactl param1=list terminal=false refresh=true"
   echo "Lima home | href=https://github.com/lima-vm/lima"
+  limactl --version
 }
 
 function processMenuCommand() {
