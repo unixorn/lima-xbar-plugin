@@ -14,11 +14,12 @@
 #
 # Dependencies: 
 #   lima - https://github.com/lima-vm/lima
+#   jq - https://stedolan.github.io/jq/
 
-# InService output color (default green)
+# Running VM color (default green)
 RUNNING_VM_COLOR="#29cc00"
 
-# OutOfService output color (default red)
+# Stopped VM color (default red)
 STOPPED_VM_COLOR="#ff0033"
 
 set -o pipefail
@@ -65,31 +66,64 @@ logger -t 'limamenu' "RUNNING_VM_COLOR=$RUNNING_VM_COLOR"
 logger -t 'limamenu' "STOPPED_VM_COLOR=$STOPPED_VM_COLOR"
 logger -t 'limamenu' "XBAR_PLUGIN=$XBAR_PLUGIN"
 
-function printMenu() {
+# shellcheck disable=SC2059
+function warnIfMissingDependencies() {
+  local depsOK=1
+  local warnings=""
+  if ! has limactl; then
+    warnings=$(printf "${warnings}limactl is not in your PATH! - click to get started | color=$STOPPED_VM_COLOR href=https://github.com/lima-vm/lima#getting-started\n")
+    depsOK=0
+  fi
+  if ! has jq; then
+    warnings=$(printf "${warnings}\njq is not in your PATH! - click for installation instructions | color=$STOPPED_VM_COLOR href=https://stedolan.github.io/jq/download/\n")
+    depsOK=0
+  fi
+  if [[ depsOK -eq 0 ]]; then
+    echo "🐋 ⛔ | color=$STOPPED_VM_COLOR"
+    echo '---'
+    echo "$warnings"
+    exit 0
+  fi
+}
+
+function printMenuBarIcon() {
   # Bar title
+  local menuBarIcon
   menuBarIcon="🐋 ⛔ | color=$STOPPED_VM_COLOR"
-  for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
+
+  for vm in $(limactl list --json | jq -r '.status')
   do
-    vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
-    if [[ "$vmstatus" == 'Running' ]]; then
+    if [[ "$vm" == 'Running' ]]; then
       menuBarIcon="🐋 🏃 | color=$RUNNING_VM_COLOR"
     fi
   done
   echo "$menuBarIcon"
   echo '---'
+}
 
-  for limavm in $(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | awk '{ print $1 }')
+function printMenu() {
+  warnIfMissingDependencies
+
+  printMenuBarIcon
+
+  local name
+  local vmstatus
+
+  for raw in $(limactl list --json)
   do
-    vmstatus=$(limactl list | grep -v 'NAME       STATUS     SSH                ARCH      DIR' | grep "$limavm" | awk '{ print $2 }')
-    if [[ "$vmstatus" == 'Running' ]]; then
-      menuItem="$limavm VM is running - ⛔ | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$limavm terminal=false refresh=true"
+    name=$(echo "$raw"| jq -r '.name' )
+    vmstatus=$(echo "$raw" | jq -r '.status')
+    if [[ $vmstatus == 'Running' ]]; then
+      menuItem="$name VM is running - ⛔ | color=$RUNNING_VM_COLOR | bash=$XBAR_PLUGIN param1=stop param2=$name terminal=false refresh=true"
     else
-      menuItem="$limavm VM is stopped - ▶️ | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$limavm terminal=false refresh=true"
+      menuItem="$name VM is stopped - ▶️ | color=$STOPPED_VM_COLOR | bash=$XBAR_PLUGIN param1=start param2=$name terminal=false refresh=true"
     fi
     echo "$menuItem"
   done
+
   echo "force rescan | bash=limactl param1=list terminal=false refresh=true"
   echo "Lima home | href=https://github.com/lima-vm/lima"
+  limactl --version
 }
 
 function processMenuCommand() {
@@ -105,16 +139,5 @@ function processMenuCommand() {
   esac
 }
 
-function warnLimactlIsMissing() {
-  echo "🐋 ❌ | color=$STOPPED_VM_COLOR"
-  echo '---'
-  echo "limactl is not in your PATH! | color=$STOPPED_VM_COLOR"
-  echo "Lima home | href=https://github.com/lima-vm/lima"
-}
-
-if has limactl; then
-  printMenu
-  processMenuCommand "$@"
-else
-  warnLimactlIsMissing
-fi
+printMenu
+processMenuCommand "$@"
