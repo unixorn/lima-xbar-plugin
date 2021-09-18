@@ -10,6 +10,7 @@ This plugin is compatible with [xbar](https://xbarapp.com/) and [SwiftBar](https
 
 ## Installation
 
+Copy `lima-plugin` to `~/Library/Application\ Support/xbar/plugins/lima-plugin.30s`, or run `make install`
 ### Dependencies
 
 - [xbar](https://xbarapp.com/) - Allows you to make custom menubar apps with just scripts
