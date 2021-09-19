@@ -123,6 +123,7 @@ function printMenu() {
       do
         echo "----$image"
         echo "------ pull | bash=$XBAR_PLUGIN param1=pull param2=$name param3=$image terminal=false refresh=true"
+        echo "------ rm | bash=$XBAR_PLUGIN param1=rmImage param2=$name param3=$image terminal=false refresh=true"
       done
     else
       echo "$name VM is stopped | color=$STOPPED_VM_COLOR"
@@ -164,6 +165,19 @@ function pullImage() {
   lima nerdctl image pull "$imageName"
 }
 
+function rmImage() {
+  # arg1 = image
+  # arg2 = VM
+  local imageName
+  local VM
+  imageName="$1"
+  VM="$2"
+  if [[ "$VM" != 'default' ]]; then
+    export LIMA_INSTANCE="$VM"
+  fi
+  lima nerdctl image rm "$imageName"
+}
+
 function processMenuCommand() {
   case "$1" in
     images)
@@ -171,6 +185,9 @@ function processMenuCommand() {
     ;;
     pull)
       pullImage "$2" "$3" # pull imagename vmname
+    ;;
+    rmImage)
+      rmImage "$2" "$3" # pull imagename vmname
     ;;
     start)
       logger -t 'limamenu' "Starting $2"
