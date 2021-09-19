@@ -122,6 +122,7 @@ function printMenu() {
       for image in $(vmImages)
       do
         echo "----$image"
+        echo "------ pull | bash=$XBAR_PLUGIN param1=pull param2=$name param3=$image terminal=false refresh=true"
       done
     else
       echo "$name VM is stopped | color=$STOPPED_VM_COLOR"
@@ -150,10 +151,26 @@ function vmImages() {
   done
 }
 
+function pullImage() {
+  # arg1 = image
+  # arg2 = VM
+  local imageName
+  local VM
+  imageName="$1"
+  VM="$2"
+  if [[ "$VM" != 'default' ]]; then
+    export LIMA_INSTANCE="$VM"
+  fi
+  lima nerdctl image pull "$imageName"
+}
+
 function processMenuCommand() {
   case "$1" in
     images)
       vmImages "$2"
+    ;;
+    pull)
+      pullImage "$2" "$3" # pull imagename vmname
     ;;
     start)
       logger -t 'limamenu' "Starting $2"
