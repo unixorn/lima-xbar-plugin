@@ -50,6 +50,34 @@ function has() {
   which "$@" > /dev/null 2>&1
 }
 
+function displayAlert() {
+  alertCommand="display alert \"$1\" message \"$2\""
+  osascript -e "$alertCommand"
+}
+
+function displayNotification() {
+  if [[ $# -eq 1 ]]; then
+    message_command="display notification \"$1\""
+    osascript -e "$message_command"
+  fi
+
+  if [[ $# -eq 2 ]]; then
+    message_command="display notification \"$2\" with title \"$1\""
+    osascript -e "$message_command"
+  fi
+
+  if [[ $# -eq 3 ]]; then
+    message_command="display notification \"$3\" with title \"$1\" subtitle \"$2\""
+    echo "message_command: $message_command"
+    osascript -e "$message_command"
+  fi
+
+  if [[ $# -eq 4 ]]; then
+    message_command="display notification \"$4\" with title  \"$1\" subtitle \"$2\" sound name \"$3\""
+    osascript -e "$message_command"
+  fi
+}
+
 # Set up a working scratch directory
 SCRATCH_D=$(mktemp -d)
 
@@ -63,16 +91,16 @@ trap cleanup EXIT
 export PATH="$PATH:/usr/local/bin"
 XBAR_PLUGIN="$0"
 
-logger -t 'limamenu' "RUNNING_VM_COLOR=$RUNNING_VM_COLOR"
-logger -t 'limamenu' "STOPPED_VM_COLOR=$STOPPED_VM_COLOR"
-logger -t 'limamenu' "XBAR_PLUGIN=$XBAR_PLUGIN"
-
 # shellcheck disable=SC2059
 function warnIfMissingDependencies() {
   local depsOK=1
   local warnings=""
   if ! has jq; then
     warnings=$(printf "${warnings}\njq is not in your PATH! - click for installation instructions | color=$STOPPED_VM_COLOR href=https://stedolan.github.io/jq/download/\n")
+    depsOK=0
+  fi
+  if ! has lima; then
+    warnings=$(printf "${warnings}lima is not in your PATH! - click to get started | color=$STOPPED_VM_COLOR href=https://github.com/lima-vm/lima#getting-started\n")
     depsOK=0
   fi
   if ! has limactl; then
@@ -166,7 +194,12 @@ function pullImage() {
   if [[ "$VM" != 'default' ]]; then
     export LIMA_INSTANCE="$VM"
   fi
-  lima nerdctl image pull "$imageName"
+  displayNotification lima "Pulling ${imageName}..."
+  if lima nerdctl image pull "$imageName"; then
+    displayNotification Lima "Pulled $imageName"
+  else
+    displayAlert Lima "Failed to pull $imageName"
+  fi
 }
 
 function rmImage() {
@@ -194,12 +227,20 @@ function processMenuCommand() {
       rmImage "$2" "$3" # pull imagename vmname
     ;;
     start)
-      logger -t 'limamenu' "Starting $2"
-      limactl start "$2"
+      displayNotification 'Lima' "Starting $2 VM"
+      if limactl start "$2"; then
+        displayNotification "Lima" "Started $2 VM successfully"
+      else
+        displayAlert "Lima" "Failed to start $2 VM"
+      fi
     ;;
     stop)
-      logger -t 'limamenu' "Stopping $2"
-      limactl stop "$2"
+      displayNotification 'Lima' "Stopping $2 VM"
+      if limactl stop "$2"; then
+        displayNotification "Lima" "Stopped $2 VM successfully"
+      else
+        displayAlert "Lima" "Failed to stop $2 VM"
+      fi
     ;;
   esac
 }
