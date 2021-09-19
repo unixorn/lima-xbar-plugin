@@ -71,12 +71,16 @@ logger -t 'limamenu' "XBAR_PLUGIN=$XBAR_PLUGIN"
 function warnIfMissingDependencies() {
   local depsOK=1
   local warnings=""
+  if ! has jq; then
+    warnings=$(printf "${warnings}\njq is not in your PATH! - click for installation instructions | color=$STOPPED_VM_COLOR href=https://stedolan.github.io/jq/download/\n")
+    depsOK=0
+  fi
   if ! has limactl; then
     warnings=$(printf "${warnings}limactl is not in your PATH! - click to get started | color=$STOPPED_VM_COLOR href=https://github.com/lima-vm/lima#getting-started\n")
     depsOK=0
   fi
-  if ! has jq; then
-    warnings=$(printf "${warnings}\njq is not in your PATH! - click for installation instructions | color=$STOPPED_VM_COLOR href=https://stedolan.github.io/jq/download/\n")
+  if ! has osascript; then
+    warnings=$(printf "${warnings}osascript is not in your PATH! - click to get started | color=$STOPPED_VM_COLOR\n")
     depsOK=0
   fi
   if [[ depsOK -eq 0 ]]; then
