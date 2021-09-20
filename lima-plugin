@@ -194,11 +194,11 @@ function pullImage() {
   if [[ "$VM" != 'default' ]]; then
     export LIMA_INSTANCE="$VM"
   fi
-  displayNotification lima "Pulling ${imageName}..."
-  if lima nerdctl image pull "$imageName"; then
-    displayNotification Lima "Pulled $imageName"
+  displayNotification lima "Pulling ${imageName} on ${VM}..."
+  if lima nerdctl image pull "${imageName}"; then
+    displayNotification Lima "Pulled ${imageName}"
   else
-    displayAlert Lima "Failed to pull $imageName"
+    displayAlert Lima "Failed to pull ${imageName} on ${VM}"
   fi
 }
 
@@ -212,7 +212,12 @@ function rmImage() {
   if [[ "$VM" != 'default' ]]; then
     export LIMA_INSTANCE="$VM"
   fi
-  lima nerdctl image rm "$imageName"
+  displayNotification lima "Removing ${imageName} from ${VM}..."
+  if lima nerdctl image rm "${imageName}"; then
+    displayNotification Lima "Removed ${imageName}"
+  else
+    displayAlert Lima "Failed to remove ${imageName}"
+  fi
 }
 
 function processMenuCommand() {
