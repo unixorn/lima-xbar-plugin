@@ -150,6 +150,18 @@ function printMenu() {
     if [[ $vmstatus == 'Running' ]]; then
       echo "$name VM is running | color=$RUNNING_VM_COLOR"
       echo "--⛔ Stop $name VM | bash=$XBAR_PLUGIN param1=stop param2=$name terminal=false refresh=true"
+
+      echo "-- Containers"
+      for container in $(vmContainers)
+      do
+        echo "---- $container"
+        # echo "------ start | bash=$XBAR_PLUGIN param1=startContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "------ stop | bash=$XBAR_PLUGIN param1=stopContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "------ kill | bash=$XBAR_PLUGIN param1=killContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "------ pause | bash=$XBAR_PLUGIN param1=pauseContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "------ unpause | bash=$XBAR_PLUGIN param1=unpauseContainer param2=$name param3=$container terminal=false refresh=true"
+      done
+
       echo "-- Images"
       for image in $(vmImages)
       do
@@ -166,6 +178,22 @@ function printMenu() {
   echo "force rescan | bash=limactl param1=list terminal=false refresh=true"
   echo "Lima home | href=https://github.com/lima-vm/lima"
   limactl --version
+}
+
+function vmContainers() {
+  # default VM doesn't need to be specified
+  if [[ "$VM" != 'default' ]]; then
+    export LIMA_INSTANCE="$VM"
+  fi
+  # shellcheck disable=SC2001,SC2046,SC2005
+  containerList="[$(echo $(lima nerdctl ps --format '{{json .}},') | sed 's/,$//')]"
+  # Can have spaces in our data, deal by using base64 (ugly)
+  for row in $(echo "${containerList}" | jq -r '.[] | @base64'); do
+    _jq() {
+      echo "${row}" | base64 --decode | jq -r "${1}"
+    }
+   _jq '.Names'
+  done
 }
 
 function vmImages() {
@@ -220,6 +248,78 @@ function rmImage() {
   fi
 }
 
+function stopContainer() {
+  # arg1 = container
+  # arg2 = VM
+  local containerName
+  local VM
+  containerName="$1"
+  VM="$2"
+  if [[ "$VM" != 'default' ]]; then
+    export LIMA_INSTANCE="$VM"
+  fi
+  displayNotification lima "Stopping ${containerName} on ${VM}..."
+  if lima nerdctl container stop "${containerName}"; then
+    displayNotification Lima "Stopped ${containerName}"
+  else
+    displayAlert Lima "Failed to stop ${containerName} on ${VM}"
+  fi
+}
+
+function killContainer() {
+  # arg1 = container
+  # arg2 = VM
+  local containerName
+  local VM
+  containerName="$1"
+  VM="$2"
+  if [[ "$VM" != 'default' ]]; then
+    export LIMA_INSTANCE="$VM"
+  fi
+  displayNotification lima "Killing ${containerName} on ${VM}..."
+  if lima nerdctl container kill "${containerName}"; then
+    displayNotification Lima "Killed ${containerName}"
+  else
+    displayAlert Lima "Failed to kill ${containerName} on ${VM}"
+  fi
+}
+
+function pauseContainer() {
+  # arg1 = container
+  # arg2 = VM
+  local containerName
+  local VM
+  containerName="$1"
+  VM="$2"
+  if [[ "$VM" != 'default' ]]; then
+    export LIMA_INSTANCE="$VM"
+  fi
+  displayNotification lima "Pausing ${containerName} on ${VM}..."
+  if lima nerdctl container pause "${containerName}"; then
+    displayNotification Lima "Paused ${containerName}"
+  else
+    displayAlert Lima "Failed to pause ${containerName} on ${VM}"
+  fi
+}
+
+function unpauseContainer() {
+  # arg1 = container
+  # arg2 = VM
+  local containerName
+  local VM
+  containerName="$1"
+  VM="$2"
+  if [[ "$VM" != 'default' ]]; then
+    export LIMA_INSTANCE="$VM"
+  fi
+  displayNotification lima "Unpausing ${containerName} on ${VM}..."
+  if lima nerdctl container unpause "${containerName}"; then
+    displayNotification Lima "Unpaused ${containerName}"
+  else
+    displayAlert Lima "Failed to unpause ${containerName} on ${VM}"
+  fi
+}
+
 function processMenuCommand() {
   case "$1" in
     images)
@@ -227,6 +327,18 @@ function processMenuCommand() {
     ;;
     pull)
       pullImage "$2" "$3" # pull imagename vmname
+    ;;
+    stopContainer)
+      stopContainer "$3" "$2" # stopContainer containerName VMname
+    ;;
+    killContainer)
+      killContainer "$3" "$2" # killContainer containerName VMname
+    ;;
+    pauseContainer)
+      pauseContainer "$3" "$2" # pauseContainer containerName VMname
+    ;;
+    unpauseContainer)
+      unpauseContainer "$3" "$2" # unpauseContainer containerName VMname
     ;;
     rmImage)
       rmImage "$2" "$3" # pull imagename vmname
