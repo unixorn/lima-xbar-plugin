@@ -326,7 +326,7 @@ function processMenuCommand() {
       vmImages "$2"
     ;;
     pull)
-      pullImage "$2" "$3" # pull imagename vmname
+      pullImage "$3" "$2" # pull imagename vmname
     ;;
     stopContainer)
       stopContainer "$3" "$2" # stopContainer containerName VMname
@@ -341,7 +341,7 @@ function processMenuCommand() {
       unpauseContainer "$3" "$2" # unpauseContainer containerName VMname
     ;;
     rmImage)
-      rmImage "$2" "$3" # pull imagename vmname
+      rmImage "$3" "$2" # pull imagename vmname
     ;;
     start)
       displayNotification 'Lima' "Starting $2 VM"
