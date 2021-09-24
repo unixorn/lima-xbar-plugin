@@ -152,14 +152,14 @@ function printMenu() {
       echo "--⛔ Stop $name VM | bash=$XBAR_PLUGIN param1=stop param2=$name terminal=false refresh=true"
 
       echo "-- Containers"
-      for container in $(vmContainers)
+      for container in $(vmContainers 'Up')
       do
         echo "---- $container"
-        # echo "------ start | bash=$XBAR_PLUGIN param1=startContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "------ stop | bash=$XBAR_PLUGIN param1=stopContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "------ kill | bash=$XBAR_PLUGIN param1=killContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "------ pause | bash=$XBAR_PLUGIN param1=pauseContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "------ unpause | bash=$XBAR_PLUGIN param1=unpauseContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "------ Running"
+        echo "-------- stop | bash=$XBAR_PLUGIN param1=stopContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "-------- kill | bash=$XBAR_PLUGIN param1=killContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "-------- pause | bash=$XBAR_PLUGIN param1=pauseContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "-------- unpause | bash=$XBAR_PLUGIN param1=unpauseContainer param2=$name param3=$container terminal=false refresh=true"
       done
 
       echo "-- Images"
@@ -181,6 +181,9 @@ function printMenu() {
 }
 
 function vmContainers() {
+  # $1 = status we're looking for
+  local wantedStatus
+  wantedStatus="${1}"
   # default VM doesn't need to be specified
   if [[ "$VM" != 'default' ]]; then
     export LIMA_INSTANCE="$VM"
@@ -192,7 +195,9 @@ function vmContainers() {
     _jq() {
       echo "${row}" | base64 --decode | jq -r "${1}"
     }
-   _jq '.Names'
+    if [[ $(_jq '.Status') == "$wantedStatus" ]]; then
+      _jq '.Names'
+    fi
   done
 }
 
