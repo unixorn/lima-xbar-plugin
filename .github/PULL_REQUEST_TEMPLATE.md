@@ -12,9 +12,9 @@
 <!--- If you're unsure about any of these, don't hesitate to ask. I'm happy to help! -->
 
 - [ ] All new and existing tests pass.
-- [ ] Any scripts added use `#!/usr/bin/env interpreter` instead of potentially platform-specific direct paths (`#!/bin/sh` and `#!/bin/bash` are allowed exceptions)
-- [ ] Scripts are marked executable
-- [ ] Scripts _do not_ have a language file extension unless they are meant to be sourced and not run standalone. No one should have to know if a script was written in bash, python, ruby or whatever. Not including file extensions makes it easier to rewrite the script in another language later without having to change every reference to the previous version.
+- [ ] Any added/updated scripts added use `#!/usr/bin/env interpreter` instead of potentially platform-specific direct paths (`#!/bin/sh` and `#!/bin/bash` are allowed exceptions)
+- [ ] Added/updated scripts are marked executable
+- [ ] Scripts _do not_ have a language file extension unless they are meant to be sourced and not run standalone. No end-user should have to know if a script was written in `bash`, `python`, `ruby` or whatever. Not including file extensions makes it easier to rewrite the script in another language later without having to change every reference to the previous version.
 - [ ] I have confirmed that the link(s) in my PR are valid.
 
 # License Acceptance
