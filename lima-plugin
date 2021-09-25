@@ -152,14 +152,28 @@ function printMenu() {
       echo "--⛔ Stop $name VM | bash=$XBAR_PLUGIN param1=stop param2=$name terminal=false refresh=true"
 
       echo "-- Containers"
-      for container in $(vmContainers)
+      for container in $(vmContainers 'Up')
       do
         echo "---- $container"
-        # echo "------ start | bash=$XBAR_PLUGIN param1=startContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "------ stop | bash=$XBAR_PLUGIN param1=stopContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "------ kill | bash=$XBAR_PLUGIN param1=killContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "------ pause | bash=$XBAR_PLUGIN param1=pauseContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "------ unpause | bash=$XBAR_PLUGIN param1=unpauseContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "------ Running"
+        echo "-------- stop | bash=$XBAR_PLUGIN param1=stopContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "-------- kill | bash=$XBAR_PLUGIN param1=killContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "-------- pause | bash=$XBAR_PLUGIN param1=pauseContainer param2=$name param3=$container terminal=false refresh=true"
+        echo "-------- unpause | bash=$XBAR_PLUGIN param1=unpauseContainer param2=$name param3=$container terminal=false refresh=true"
+      done
+      for stopped in $(vmContainers 'Created')
+      do
+        echo "---- $stopped"
+        echo "------ Stopped"
+        echo "-------- rm | bash=$XBAR_PLUGIN param1=rmContainer param2=$name param3=$stopped terminal=false refresh=true"
+        echo "-------- start | bash=$XBAR_PLUGIN param1=startContainer param2=$name param3=$stopped terminal=false refresh=true"
+      done
+      for stopped in $(vmContainers 'Exited')
+      do
+        echo "---- $stopped"
+        echo "------ Stopped"
+        echo "-------- rm | bash=$XBAR_PLUGIN param1=rmContainer param2=$name param3=$stopped terminal=false refresh=true"
+        echo "-------- start | bash=$XBAR_PLUGIN param1=startContainer param2=$name param3=$stopped terminal=false refresh=true"
       done
 
       echo "-- Images"
@@ -181,18 +195,29 @@ function printMenu() {
 }
 
 function vmContainers() {
+  # $1 = status we're looking for
+  local wantedStatus
+  wantedStatus="${1}"
   # default VM doesn't need to be specified
   if [[ "$VM" != 'default' ]]; then
     export LIMA_INSTANCE="$VM"
   fi
   # shellcheck disable=SC2001,SC2046,SC2005
-  containerList="[$(echo $(lima nerdctl ps --format '{{json .}},') | sed 's/,$//')]"
+  containerList="[$(echo $(lima nerdctl ps -a --format '{{json .}},') | sed 's/,$//')]"
   # Can have spaces in our data, deal by using base64 (ugly)
   for row in $(echo "${containerList}" | jq -r '.[] | @base64'); do
     _jq() {
       echo "${row}" | base64 --decode | jq -r "${1}"
     }
-   _jq '.Names'
+    if [[ $(_jq '.Status') == "$wantedStatus" ]]; then
+      name=$(_jq '.Names')
+      id=$(_jq '.ID')
+      if [[ "$name" != "" ]]; then
+        echo "$name"
+      else
+        echo "$id"
+      fi
+    fi
   done
 }
 
@@ -248,6 +273,24 @@ function rmImage() {
   fi
 }
 
+function startContainer() {
+  # arg1 = container
+  # arg2 = VM
+  local containerName
+  local VM
+  containerName="$1"
+  VM="$2"
+  if [[ "$VM" != 'default' ]]; then
+    export LIMA_INSTANCE="$VM"
+  fi
+  displayNotification lima "Starting ${containerName} on ${VM}..."
+  if lima nerdctl container start "${containerName}"; then
+    displayNotification Lima "Started ${containerName}"
+  else
+    displayAlert Lima "Failed to start ${containerName} on ${VM}"
+  fi
+}
+
 function stopContainer() {
   # arg1 = container
   # arg2 = VM
@@ -281,6 +324,24 @@ function killContainer() {
     displayNotification Lima "Killed ${containerName}"
   else
     displayAlert Lima "Failed to kill ${containerName} on ${VM}"
+  fi
+}
+
+function rmContainer() {
+  # arg1 = container
+  # arg2 = VM
+  local containerName
+  local VM
+  containerName="$1"
+  VM="$2"
+  if [[ "$VM" != 'default' ]]; then
+    export LIMA_INSTANCE="$VM"
+  fi
+  displayNotification lima "Removing ${containerName} on ${VM}..."
+  if lima nerdctl container rm "${containerName}"; then
+    displayNotification Lima "Removed ${containerName}"
+  else
+    displayAlert Lima "Failed to remove ${containerName} on ${VM}"
   fi
 }
 
@@ -328,6 +389,9 @@ function processMenuCommand() {
     pull)
       pullImage "$3" "$2" # pull imagename vmname
     ;;
+    startContainer)
+      startContainer "$3" "$2" # stopContainer containerName VMname
+    ;;
     stopContainer)
       stopContainer "$3" "$2" # stopContainer containerName VMname
     ;;
@@ -336,6 +400,9 @@ function processMenuCommand() {
     ;;
     pauseContainer)
       pauseContainer "$3" "$2" # pauseContainer containerName VMname
+    ;;
+    rmContainer)
+      rmContainer "$3" "$2" # pauseContainer containerName VMname
     ;;
     unpauseContainer)
       unpauseContainer "$3" "$2" # unpauseContainer containerName VMname
