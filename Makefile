@@ -1,5 +1,5 @@
 i: lint install
-install:
+install: format
 	cp lima-plugin ~/Library/Application\ Support/xbar/plugins/lima-plugin.10s
 
 l: lint
@@ -12,8 +12,9 @@ requirements:
 
 f: format
 format:
-	black lima-plugin
+	black lima-plugin *.py
 
 t: test
 test: format
 	poetry run ./lima-plugin
+
