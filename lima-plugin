@@ -96,6 +96,31 @@ def parseCLI():
     return cliArgs
 
 
+# fun with osascript
+
+
+def displayAlert(title: str, message: str):
+    """
+    Display an alert using osascript. Blocking.
+
+    :param str title:
+    :param str message:
+    """
+    alertCommand = f'display alert "{title}" message "{message}"'
+    runCommand(command=["osascript", "-e", alertCommand])
+
+
+def displayNotification(title: str, message: str):
+    """
+    Publish a notification to the notification manager.
+
+    :param str title:
+    :param str message:
+    """
+    alertCommand = f'display notification "{message}" with title "{title}" '
+    runCommand(command=["osascript", "-e", alertCommand])
+
+
 def runCommand(command: list, env=dict(os.environ)):
     """
     Run a command and decode the json output
@@ -237,6 +262,9 @@ def prep_environment_for_lima(vm: str = "default", env: dict = dict(os.environ))
     Also adds /usr/local/bin to $PATH
 
     :param str vm: VM to work in
+    :param dict env: Environment variables to base returned environment on
+
+    :return dict: Environment dictionary, with /usr/local/bin added to $PATH
     """
     newpath = "%s:/usr/local/bin" % env["PATH"]
     env["PATH"] = newpath
@@ -249,6 +277,10 @@ def prep_environment_for_lima(vm: str = "default", env: dict = dict(os.environ))
 def containerOps(action: str, container: str, vm: str = "default"):
     """
     Handle container operations
+
+    :param str action: What container op to do
+    :param str container: What container to do the action on
+    :param str vm: Which VM is the container in?
     """
     logging.warning("containerOps")
     logging.debug("action: %s" % action)
@@ -259,15 +291,21 @@ def containerOps(action: str, container: str, vm: str = "default"):
 
     command = ["lima", "nerdctl", "container", action, container]
     logging.warning("containerops command: %s", command)
+    displayNotification(title="Lima VM", message=" ".join(command))
 
     output = runCommand(command=command, env=env)
     logging.warning(output)
     logging.warning("%s complete", action)
+    displayNotification(title="Task complete", message=" ".join(command))
 
 
 def imageOps(action: str, image: str, vm: str = "default"):
     """
     Handle VM operations
+
+    :param str action: What image op to do
+    :param str image: What image to do the action on
+    :param str vm: Which VM is the image in?
     """
     logging.critical("imageOps")
     logging.info("action: %s" % action)
@@ -279,14 +317,19 @@ def imageOps(action: str, image: str, vm: str = "default"):
     command = ["lima", "nerdctl", "image", action, image]
     logging.warning("command: %s", command)
     logging.warning("PATH: %s", env["PATH"])
+    displayNotification(title="Lima VM", message=" ".join(command))
     output = runCommand(command=command, env=env)
     logging.debug(output)
     logging.warning("%s complete", action)
+    displayNotification(title="Task complete", message=" ".join(command))
 
 
 def vmOps(action: str, vm: str = "default"):
     """
     Handle VM operations
+
+    :param str action: What action to run - should be start or stop
+    :param str vm: Name of VM to act on
     """
     logging.critical("vmOps")
     logging.debug("action: %s" % action)
@@ -296,9 +339,11 @@ def vmOps(action: str, vm: str = "default"):
 
     command = ["limactl", action, vm]
     logging.warning("command: %s", command)
+    displayNotification(title="Lima VM", message=" ".join(command))
     output = runCommand(command=command, env=env)
     logging.debug(output)
     logging.warning("%s complete", action)
+    displayNotification(title="Task completed", message=" ".join(command))
 
 
 # Actual Xbar-compatible output
@@ -306,7 +351,11 @@ def vmOps(action: str, vm: str = "default"):
 
 def xbar_icon(vms: dict = {}):
     """
-    Determine icon to display in menubar
+    Determine icon to display in menubar.
+
+    We display a running menubar icon if at least one VM is running.
+
+    :param dict vms: Data about Lima VMs
     """
     menuBarIcon = f"🐋 ⛔ | color={STOPPED_VM_COLOR}"
     for vm in vms:
