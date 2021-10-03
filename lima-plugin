@@ -34,7 +34,7 @@ RUNNING_VM_COLOR = "#29cc00"
 # Stopped VM color (default red)
 STOPPED_VM_COLOR = "#ff0033"
 
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 
 
 def logSetup(level: str = "INFO"):
@@ -87,6 +87,7 @@ def parseCLI():
     parser.add_argument(
         "--image-action", choices=["pull", "rm"], help="Action to perform on image"
     )
+    parser.add_argument("--pull-new-image", action="store_true")
     parser.add_argument(
         "--vm-action",
         choices=["start", "stop"],
@@ -121,12 +122,35 @@ def displayNotification(title: str, message: str):
     runCommand(command=["osascript", "-e", alertCommand])
 
 
+def inputDialog(user_prompt: str, icon: str = "note"):
+    """
+    Uses osascript to present a dialog with a prompt and returns the user's answer.
+
+    :param str prompt:
+    :param str icon: note,
+
+    :return str:
+    """
+    valid_icons = ["caution", "note", "stop"]
+    if icon.lower() not in valid_icons:
+        icon = "note"
+
+    applescript = f"""set dialogText to text returned of (display dialog "{user_prompt}" default answer "")
+   return dialogText
+    """
+
+    answer = runCommand(command=["osascript", "-e", applescript]).strip()
+    logging.debug(f"Asked {user_prompt} , got answer: {answer}")
+    return answer
+
+
 def runCommand(command: list, env=dict(os.environ)):
     """
-    Run a command and decode the json output
+    Run a command and return the decoded output
 
     :param list command:
-    :return dict:
+
+    :return str:
     """
     return subprocess.run(command, env=env, stdout=subprocess.PIPE).stdout.decode(
         "utf-8"
@@ -243,7 +267,7 @@ def listVMs():
     env["PATH"] = newpath
 
     vmRaw = subprocess.run(
-        ["/usr/local/bin/limactl", "list", "--json"], env=env, stdout=subprocess.PIPE
+        ["limactl", "list", "--json"], env=env, stdout=subprocess.PIPE
     ).stdout.decode("utf-8")
 
     for vm in vmRaw.splitlines():
@@ -346,6 +370,26 @@ def vmOps(action: str, vm: str = "default"):
     displayNotification(title="Task completed", message=" ".join(command))
 
 
+def pullNewImage(vm: str = "default"):
+    """
+    Pulls a new image.
+
+    Args:
+        vm (str, optional): Which VM to pull the new image into. Defaults to 'default'.
+    """
+    env = prep_environment_for_lima(vm=vm)
+    image = inputDialog(user_prompt=f"What image should we pull into VM {vm}?")
+    if image != "":
+        pull_command = ["lima", "nerdctl", "image", "pull", image]
+        displayNotification(
+            title=f"Pulling image {image}", message=" ".join(pull_command)
+        )
+        runCommand(command=pull_command, env=env)
+        displayNotification(title=f"Pulling image {image}", message="Completed")
+    else:
+        displayAlert(title="Error!", message="No image specified")
+
+
 # Actual Xbar-compatible output
 
 
@@ -434,6 +478,9 @@ def vmImageSubMenu(vm: str = "default"):
     logging.debug("images: %s", images)
 
     print("-- Images")
+    print(
+        f'---- pull new image| bash="{plugin_f}" param1=--vm param2={vm} param3=--pull-new-image terminal=false refresh=true'
+    )
     for image in images:
         print("---- %s" % image)
         print(
@@ -484,30 +531,36 @@ def main():
     """
     Main program driver
     """
-    logSetup(level="DEBUG")
-
-    logging.debug("plugin path: %s" % __file__)
 
     cli = parseCLI()
-    logging.warning("VERSON: %s", VERSION)
+    logSetup(level=cli.log_level)
+
+    logging.debug("plugin path: %s" % __file__)
+    logging.debug("VERSON: %s", VERSION)
 
     logging.debug("cli: %s" % cli)
 
-    logging.warning("argv[0] %s" % sys.argv[0])
+    logging.info("argv[0] %s" % sys.argv[0])
+
+    xbarMenu()
 
     if cli.container_action:
         logging.info("container action: %s", cli.container_action)
         containerOps(vm=cli.vm, action=cli.container_action, container=cli.target)
+        sys.exit()
 
     if cli.image_action:
         logging.info("image action: %s", cli.image_action)
         imageOps(action=cli.image_action, image=cli.target, vm=cli.vm)
+        sys.exit()
 
     if cli.vm_action:
         logging.info("vm action: %s", cli.vm_action)
         vmOps(action=cli.vm_action, vm=cli.vm)
+        sys.exit()
 
-    xbarMenu()
+    if cli.pull_new_image:
+        pullNewImage(vm=cli.vm)
 
 
 if __name__ == "__main__":

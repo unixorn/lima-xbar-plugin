@@ -22,6 +22,12 @@
 
 ## Description
 
+This plugin is compatible with [xbar](https://xbarapp.com/) and [SwiftBar](https://github.com/swiftbar/SwiftBar), and provides a menubar app that creates a Lima menubar option with submenus for each Lima VM on your machine. For each VM, you can:
+
+- start/stop the VM
+- stop, start or remove stopped containers
+- pull or remove images from the VM
+
 ### Screen shots
 
 ![Screen shot of xbar menu with container submenu for a running vm](https://raw.githubusercontent.com/unixorn/unixorn.github.io/master/images/lima-xbar/containers-submenu.png)
@@ -29,7 +35,6 @@
 ![Screen shot of xbar menu with image submenu for a running vm](https://raw.githubusercontent.com/unixorn/unixorn.github.io/master/images/lima-xbar/images-submenu.png)
 
 
-This plugin is compatible with [xbar](https://xbarapp.com/) and [SwiftBar](https://github.com/swiftbar/SwiftBar), and provides a menubar app that creates submenus for each Lima VM on your machine. For each VM, you can start/stop the VM, stop (and start or remove stopped containers) containers, and pull or remove images from the VM.
 
 ## Installation
 
