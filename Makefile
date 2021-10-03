@@ -1,4 +1,4 @@
-i: lint install
+i: format install
 install: format
 	cp lima-plugin ~/Library/Application\ Support/xbar/plugins/lima-plugin.10s
 
