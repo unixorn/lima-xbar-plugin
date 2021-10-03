@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 #
-# XBar menu plugin for lima
+# Lima Swiftbar/Xbar plugin
 #
 # Copyright 2021, Joe Block <jpb@unixorn.net>
 #
@@ -12,422 +12,502 @@
 # <xbar.dependencies>jq,lima</xbar.dependencies>
 # <xbar.image>https://raw.githubusercontent.com/unixorn/lima-xbar-plugin/main/pix/limactl-screen-shot.png</xbar.image>
 # <xbar.abouturl>https://github.com/unixorn/lima-xbar-plugin/</xbar.abouturl>
+# <swiftbar.runInBash>false</swiftbar.runInBash>
 #
-# Dependencies: 
+# Dependencies:
 #   lima - https://github.com/lima-vm/lima
 #   jq - https://stedolan.github.io/jq/
 
+import argparse
+import json
+import logging
+import logging.handlers
+import os
+import subprocess
+import sys
+
+# import syslog
+
 # Running VM color (default green)
-RUNNING_VM_COLOR="#29cc00"
+RUNNING_VM_COLOR = "#29cc00"
 
 # Stopped VM color (default red)
-STOPPED_VM_COLOR="#ff0033"
+STOPPED_VM_COLOR = "#ff0033"
 
-set -o pipefail
-if [[ -n "$DEBUG" ]]; then
-  set -x
-fi
+VERSION = "1.1.1"
 
-function cleanup() {
-  if [[ -d "$SCRATCH_D" ]]; then
-    rm -fr "$SCRATCH_D"
-  fi
-}
 
-function debug() {
-  if [[ -n "$DEBUG" ]]; then
-    echo "$@"
-  fi
-}
+def logSetup(level: str = "INFO"):
+    maclog = logging.handlers.SysLogHandler(
+        address="/var/run/syslog", facility="local1"
+    )
+    maclog.ident = "lima-xbar"
 
-function fail() {
-  printf '%s\n' "$1" >&2  ## Send message to stderr. Exclude >&2 if you don't want it that way.
-  exit "${2-1}"  ## Return a code specified by $2 or 1 by default.
-}
+    loglevel = getattr(logging, level.upper(), None)
+    logFormat = " [%(asctime)s][%(levelname)8s][%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+    logging.basicConfig(level=loglevel, format=logFormat)
 
-function has() {
-  # Check if a command is in $PATH
-  which "$@" > /dev/null 2>&1
-}
+    maclog.setLevel(loglevel)
 
-function displayAlert() {
-  alertCommand="display alert \"$1\" message \"$2\""
-  osascript -e "$alertCommand"
-}
+    # set a format which is simpler for console use
+    formatter = logging.Formatter(" %(name)-12s: %(levelname)-8s %(message)s")
 
-function displayNotification() {
-  if [[ $# -eq 1 ]]; then
-    message_command="display notification \"$1\""
-    osascript -e "$message_command"
-  fi
+    # tell the handler to use this format
+    maclog.setFormatter(formatter)
 
-  if [[ $# -eq 2 ]]; then
-    message_command="display notification \"$2\" with title \"$1\""
-    osascript -e "$message_command"
-  fi
+    # add the handler to the root logger
+    logging.getLogger("").addHandler(maclog)
+    logging.debug("Set log level to %s", level.upper())
 
-  if [[ $# -eq 3 ]]; then
-    message_command="display notification \"$3\" with title \"$1\" subtitle \"$2\""
-    echo "message_command: $message_command"
-    osascript -e "$message_command"
-  fi
 
-  if [[ $# -eq 4 ]]; then
-    message_command="display notification \"$4\" with title  \"$1\" subtitle \"$2\" sound name \"$3\""
-    osascript -e "$message_command"
-  fi
-}
+def parseCLI():
+    """
+    Parse the command line options
+    """
+    parser = argparse.ArgumentParser(description="Lima Swiftbar/Xbar plugin")
+    parser.add_argument("-d", "--debug", help="Debug setting", action="store_true")
+    parser.add_argument(
+        "-l",
+        "--log-level",
+        type=str.upper,
+        help="set log level",
+        choices=["DEBUG", "INFO", "ERROR", "WARNING", "CRITICAL"],
+        default="INFO",
+    )
+    parser.add_argument(
+        "--vm", "--virtual-machine", type=str, help="Which vm to use", default="default"
+    )
+    parser.add_argument("--target", type=str, help="Which image/vm/container to target")
 
-# Set up a working scratch directory
-SCRATCH_D=$(mktemp -d)
+    parser.add_argument(
+        "--container-action",
+        choices=["start", "stop", "rm", "pause", "unpause"],
+        help="Action to perform on a container",
+    )
+    parser.add_argument(
+        "--image-action", choices=["pull", "rm"], help="Action to perform on image"
+    )
+    parser.add_argument(
+        "--vm-action",
+        choices=["start", "stop"],
+        help="Action to perform on vm",
+    )
+    cliArgs = parser.parse_args()
+    return cliArgs
 
-if [[ ! "$SCRATCH_D" || ! -d "$SCRATCH_D" ]]; then
-  echo "Could not create temp dir"
-  exit 1
-fi
 
-trap cleanup EXIT
+# fun with osascript
 
-export PATH="$PATH:/usr/local/bin"
-XBAR_PLUGIN="$0"
 
-# shellcheck disable=SC2059
-function warnIfMissingDependencies() {
-  local depsOK=1
-  local warnings=""
-  if ! has jq; then
-    warnings=$(printf "${warnings}\njq is not in your PATH! - click for installation instructions | color=$STOPPED_VM_COLOR href=https://stedolan.github.io/jq/download/\n")
-    depsOK=0
-  fi
-  if ! has lima; then
-    warnings=$(printf "${warnings}lima is not in your PATH! - click to get started | color=$STOPPED_VM_COLOR href=https://github.com/lima-vm/lima#getting-started\n")
-    depsOK=0
-  fi
-  if ! has limactl; then
-    warnings=$(printf "${warnings}limactl is not in your PATH! - click to get started | color=$STOPPED_VM_COLOR href=https://github.com/lima-vm/lima#getting-started\n")
-    depsOK=0
-  fi
-  if ! has osascript; then
-    warnings=$(printf "${warnings}osascript is not in your PATH! - click to get started | color=$STOPPED_VM_COLOR\n")
-    depsOK=0
-  fi
-  if [[ depsOK -eq 0 ]]; then
-    echo "🐋 ⛔ | color=$STOPPED_VM_COLOR"
-    echo '---'
-    echo "$warnings"
-    exit 0
-  fi
-}
+def displayAlert(title: str, message: str):
+    """
+    Display an alert using osascript. Blocking.
 
-function printMenuBarIcon() {
-  # Bar title
-  local menuBarIcon
-  menuBarIcon="🐋 ⛔ | color=$STOPPED_VM_COLOR"
+    :param str title:
+    :param str message:
+    """
+    alertCommand = f'display alert "{title}" message "{message}"'
+    runCommand(command=["osascript", "-e", alertCommand])
 
-  for vm in $(limactl list --json | jq -r '.status')
-  do
-    if [[ "$vm" == 'Running' ]]; then
-      menuBarIcon="🐋 🏃 | color=$RUNNING_VM_COLOR"
-    fi
-  done
-  echo "$menuBarIcon"
-  echo '---'
-}
 
-# shellcheck disable=SC2059
-function printMenu() {
-  warnIfMissingDependencies
+def displayNotification(title: str, message: str):
+    """
+    Publish a notification to the notification manager.
 
-  printMenuBarIcon
+    :param str title:
+    :param str message:
+    """
+    alertCommand = f'display notification "{message}" with title "{title}" '
+    runCommand(command=["osascript", "-e", alertCommand])
 
-  local name
-  local vmstatus
 
-  for raw in $(limactl list --json)
-  do
-    name=$(echo "$raw"| jq -r '.name' )
-    vmstatus=$(echo "$raw" | jq -r '.status')
-    if [[ $vmstatus == 'Running' ]]; then
-      echo "$name VM is running | color=$RUNNING_VM_COLOR"
-      echo "--⛔ Stop $name VM | bash=$XBAR_PLUGIN param1=stop param2=$name terminal=false refresh=true"
+def runCommand(command: list, env=dict(os.environ)):
+    """
+    Run a command and decode the json output
 
-      echo "-- Containers"
-      for container in $(vmContainers 'Up')
-      do
-        echo "---- $container"
-        echo "------ Running"
-        echo "-------- stop | bash=$XBAR_PLUGIN param1=stopContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "-------- kill | bash=$XBAR_PLUGIN param1=killContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "-------- pause | bash=$XBAR_PLUGIN param1=pauseContainer param2=$name param3=$container terminal=false refresh=true"
-        echo "-------- unpause | bash=$XBAR_PLUGIN param1=unpauseContainer param2=$name param3=$container terminal=false refresh=true"
-      done
-      for stopped in $(vmContainers 'Created')
-      do
-        echo "---- $stopped"
-        echo "------ Stopped"
-        echo "-------- rm | bash=$XBAR_PLUGIN param1=rmContainer param2=$name param3=$stopped terminal=false refresh=true"
-        echo "-------- start | bash=$XBAR_PLUGIN param1=startContainer param2=$name param3=$stopped terminal=false refresh=true"
-      done
-      for stopped in $(vmContainers 'Exited')
-      do
-        echo "---- $stopped"
-        echo "------ Stopped"
-        echo "-------- rm | bash=$XBAR_PLUGIN param1=rmContainer param2=$name param3=$stopped terminal=false refresh=true"
-        echo "-------- start | bash=$XBAR_PLUGIN param1=startContainer param2=$name param3=$stopped terminal=false refresh=true"
-      done
+    :param list command:
+    :return dict:
+    """
+    return subprocess.run(command, env=env, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
 
-      echo "-- Images"
-      for image in $(vmImages)
-      do
-        echo "----$image"
-        echo "------ pull | bash=$XBAR_PLUGIN param1=pull param2=$name param3=$image terminal=false refresh=true"
-        echo "------ rm | bash=$XBAR_PLUGIN param1=rmImage param2=$name param3=$image terminal=false refresh=true"
-      done
-    else
-      echo "$name VM is stopped | color=$STOPPED_VM_COLOR"
-      echo "--▶️ Start $name VM | bash=$XBAR_PLUGIN param1=start param2=$name terminal=false refresh=true"
-    fi
-  done
 
-  echo "force rescan | bash=limactl param1=list terminal=false refresh=true"
-  echo "Lima home | href=https://github.com/lima-vm/lima"
-  limactl --version
-}
+def jsonCommand(command: list, env=dict(os.environ)):
+    """
+    Run a command and decode the json output
 
-function vmContainers() {
-  # $1 = status we're looking for
-  local wantedStatus
-  wantedStatus="${1}"
-  # default VM doesn't need to be specified
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  # shellcheck disable=SC2001,SC2046,SC2005
-  containerList="[$(echo $(lima nerdctl ps -a --format '{{json .}},') | sed 's/,$//')]"
-  # Can have spaces in our data, deal by using base64 (ugly)
-  for row in $(echo "${containerList}" | jq -r '.[] | @base64'); do
-    _jq() {
-      echo "${row}" | base64 --decode | jq -r "${1}"
-    }
-    if [[ $(_jq '.Status') == "$wantedStatus" ]]; then
-      name=$(_jq '.Names')
-      id=$(_jq '.ID')
-      if [[ "$name" != "" ]]; then
-        echo "$name"
-      else
-        echo "$id"
-      fi
-    fi
-  done
-}
+    :param list command:
+    :return dict:
+    """
+    json_output = runCommand(command=command, env=env)
 
-function vmImages() {
-  # default VM doesn't need to be specified
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  # shellcheck disable=SC2001,SC2046,2005
-  imageList="[$(echo $(lima nerdctl images --format '{{json .}},') | sed 's/,$//')]"
-  # Can have spaces in our data, deal by using base64 (ugly)
-  for row in $(echo "${imageList}" | jq -r '.[] | @base64'); do
-    _jq() {
-      echo "${row}" | base64 --decode | jq -r "${1}"
-    }
-   echo "$(_jq '.Repository'):$(_jq '.Tag')"
-  done
-}
+    data = []
+    for line in json_output.splitlines():
+        try:
+            details = json.loads(line)
+            data.append(details)
+        except json.decoder.JSONDecodeError:
+            logging.error("Bad JSON returned: %s", line)
+    return data
 
-function pullImage() {
-  # arg1 = image
-  # arg2 = VM
-  local imageName
-  local VM
-  imageName="$1"
-  VM="$2"
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  displayNotification lima "Pulling ${imageName} on ${VM}..."
-  if lima nerdctl image pull "${imageName}"; then
-    displayNotification Lima "Pulled ${imageName}"
-  else
-    displayAlert Lima "Failed to pull ${imageName} on ${VM}"
-  fi
-}
 
-function rmImage() {
-  # arg1 = image
-  # arg2 = VM
-  local imageName
-  local VM
-  imageName="$1"
-  VM="$2"
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  displayNotification lima "Removing ${imageName} from ${VM}..."
-  if lima nerdctl image rm "${imageName}"; then
-    displayNotification Lima "Removed ${imageName}"
-  else
-    displayAlert Lima "Failed to remove ${imageName}"
-  fi
-}
+def listContainers(vm: str = "default"):
+    """
+    List all containers in a VM
 
-function startContainer() {
-  # arg1 = container
-  # arg2 = VM
-  local containerName
-  local VM
-  containerName="$1"
-  VM="$2"
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  displayNotification lima "Starting ${containerName} on ${VM}..."
-  if lima nerdctl container start "${containerName}"; then
-    displayNotification Lima "Started ${containerName}"
-  else
-    displayAlert Lima "Failed to start ${containerName} on ${VM}"
-  fi
-}
+    :param vm:
 
-function stopContainer() {
-  # arg1 = container
-  # arg2 = VM
-  local containerName
-  local VM
-  containerName="$1"
-  VM="$2"
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  displayNotification lima "Stopping ${containerName} on ${VM}..."
-  if lima nerdctl container stop "${containerName}"; then
-    displayNotification Lima "Stopped ${containerName}"
-  else
-    displayAlert Lima "Failed to stop ${containerName} on ${VM}"
-  fi
-}
+    :return dict:
+    """
+    containers = {}
+    if vm != "default":
+        env = dict(os.environ, LIMA_INSTANCE=vm)
+    else:
+        env = dict(os.environ)
+    newpath = "%s:/usr/local/bin" % env["PATH"]
+    env["PATH"] = newpath
 
-function killContainer() {
-  # arg1 = container
-  # arg2 = VM
-  local containerName
-  local VM
-  containerName="$1"
-  VM="$2"
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  displayNotification lima "Killing ${containerName} on ${VM}..."
-  if lima nerdctl container kill "${containerName}"; then
-    displayNotification Lima "Killed ${containerName}"
-  else
-    displayAlert Lima "Failed to kill ${containerName} on ${VM}"
-  fi
-}
+    command = [
+        "lima",
+        "nerdctl",
+        "container",
+        "ls",
+        "-a",
+        "--format",
+        "{{json .}}",
+    ]
+    raw = jsonCommand(command=command, env=env)
+    for container in raw:
+        try:
+            if container["Names"] != "":
+                key = container["Names"]
+            else:
+                key = container["ID"]
+            containers[key] = container
+        except KeyError:
+            logging.error("Bad container record: %s", container)
+    return containers
 
-function rmContainer() {
-  # arg1 = container
-  # arg2 = VM
-  local containerName
-  local VM
-  containerName="$1"
-  VM="$2"
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  displayNotification lima "Removing ${containerName} on ${VM}..."
-  if lima nerdctl container rm "${containerName}"; then
-    displayNotification Lima "Removed ${containerName}"
-  else
-    displayAlert Lima "Failed to remove ${containerName} on ${VM}"
-  fi
-}
 
-function pauseContainer() {
-  # arg1 = container
-  # arg2 = VM
-  local containerName
-  local VM
-  containerName="$1"
-  VM="$2"
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  displayNotification lima "Pausing ${containerName} on ${VM}..."
-  if lima nerdctl container pause "${containerName}"; then
-    displayNotification Lima "Paused ${containerName}"
-  else
-    displayAlert Lima "Failed to pause ${containerName} on ${VM}"
-  fi
-}
+def listImages(vm: str = "default"):
+    """
+    List all images in a VM
 
-function unpauseContainer() {
-  # arg1 = container
-  # arg2 = VM
-  local containerName
-  local VM
-  containerName="$1"
-  VM="$2"
-  if [[ "$VM" != 'default' ]]; then
-    export LIMA_INSTANCE="$VM"
-  fi
-  displayNotification lima "Unpausing ${containerName} on ${VM}..."
-  if lima nerdctl container unpause "${containerName}"; then
-    displayNotification Lima "Unpaused ${containerName}"
-  else
-    displayAlert Lima "Failed to unpause ${containerName} on ${VM}"
-  fi
-}
+    :param vm:
 
-function processMenuCommand() {
-  case "$1" in
-    images)
-      vmImages "$2"
-    ;;
-    pull)
-      pullImage "$3" "$2" # pull imagename vmname
-    ;;
-    startContainer)
-      startContainer "$3" "$2" # stopContainer containerName VMname
-    ;;
-    stopContainer)
-      stopContainer "$3" "$2" # stopContainer containerName VMname
-    ;;
-    killContainer)
-      killContainer "$3" "$2" # killContainer containerName VMname
-    ;;
-    pauseContainer)
-      pauseContainer "$3" "$2" # pauseContainer containerName VMname
-    ;;
-    rmContainer)
-      rmContainer "$3" "$2" # pauseContainer containerName VMname
-    ;;
-    unpauseContainer)
-      unpauseContainer "$3" "$2" # unpauseContainer containerName VMname
-    ;;
-    rmImage)
-      rmImage "$3" "$2" # pull imagename vmname
-    ;;
-    start)
-      displayNotification 'Lima' "Starting $2 VM"
-      if limactl start "$2"; then
-        displayNotification "Lima" "Started $2 VM successfully"
-      else
-        displayAlert "Lima" "Failed to start $2 VM"
-      fi
-    ;;
-    stop)
-      displayNotification 'Lima' "Stopping $2 VM"
-      if limactl stop "$2"; then
-        displayNotification "Lima" "Stopped $2 VM successfully"
-      else
-        displayAlert "Lima" "Failed to stop $2 VM"
-      fi
-    ;;
-  esac
-}
+    :return dict:
+    """
+    images = {}
+    if vm != "default":
+        env = dict(os.environ, LIMA_INSTANCE=vm)
+    else:
+        env = dict(os.environ)
 
-printMenu
-processMenuCommand "$@"
+    newpath = "%s:/usr/local/bin" % env["PATH"]
+    env["PATH"] = newpath
+
+    command = ["lima", "nerdctl", "images", "--format", "{{json .}}"]
+    raw = jsonCommand(command=command, env=env)
+    logging.debug("Processing command output...")
+    for image in raw:
+        try:
+            repo = "ERROR"
+            tag = "ERROR"
+            if "Repository" in image:
+                repo = image["Repository"]
+            else:
+                logging.error("Repository key missing")
+            if "Tag" in image:
+                tag = image["Tag"]
+            else:
+                logging.error("Tag key missing")
+            images["%s:%s" % (repo, tag)] = image
+        except KeyError:
+            logging.error("Bad image record: %s", image)
+            logging.error("Keys: %s", image.keys())
+            logging.error(" ")
+    return images
+
+
+def listVMs():
+    """
+    List all VMs
+
+    :return dict:
+    """
+    vmList = {}
+
+    env = dict(os.environ)
+    newpath = "%s:/usr/local/bin" % env["PATH"]
+    env["PATH"] = newpath
+
+    vmRaw = subprocess.run(
+        ["/usr/local/bin/limactl", "list", "--json"], env=env, stdout=subprocess.PIPE
+    ).stdout.decode("utf-8")
+
+    for vm in vmRaw.splitlines():
+        details = json.loads(vm)
+        vmList[details["name"]] = details
+    return vmList
+
+
+# Submenu processing
+
+
+def prep_environment_for_lima(vm: str = "default", env: dict = dict(os.environ)):
+    """
+    Set up an environment dictionary we can use to run a lima command.
+
+    Also adds /usr/local/bin to $PATH
+
+    :param str vm: VM to work in
+    :param dict env: Environment variables to base returned environment on
+
+    :return dict: Environment dictionary, with /usr/local/bin added to $PATH
+    """
+    newpath = "%s:/usr/local/bin" % env["PATH"]
+    env["PATH"] = newpath
+
+    if vm != "default":
+        env["LIMA_INSTANCE"] = vm
+    return env
+
+
+def containerOps(action: str, container: str, vm: str = "default"):
+    """
+    Handle container operations
+
+    :param str action: What container op to do
+    :param str container: What container to do the action on
+    :param str vm: Which VM is the container in?
+    """
+    logging.warning("containerOps")
+    logging.debug("action: %s" % action)
+    logging.debug("container: %s" % container)
+    logging.debug("vm: %s" % vm)
+
+    env = prep_environment_for_lima(vm=vm)
+
+    command = ["lima", "nerdctl", "container", action, container]
+    logging.warning("containerops command: %s", command)
+    displayNotification(title="Lima VM", message=" ".join(command))
+
+    output = runCommand(command=command, env=env)
+    logging.warning(output)
+    logging.warning("%s complete", action)
+    displayNotification(title="Task complete", message=" ".join(command))
+
+
+def imageOps(action: str, image: str, vm: str = "default"):
+    """
+    Handle VM operations
+
+    :param str action: What image op to do
+    :param str image: What image to do the action on
+    :param str vm: Which VM is the image in?
+    """
+    logging.critical("imageOps")
+    logging.info("action: %s" % action)
+    logging.info("image: %s" % image)
+    logging.info("vm: %s" % vm)
+
+    env = prep_environment_for_lima(vm=vm)
+
+    command = ["lima", "nerdctl", "image", action, image]
+    logging.warning("command: %s", command)
+    logging.warning("PATH: %s", env["PATH"])
+    displayNotification(title="Lima VM", message=" ".join(command))
+    output = runCommand(command=command, env=env)
+    logging.debug(output)
+    logging.warning("%s complete", action)
+    displayNotification(title="Task complete", message=" ".join(command))
+
+
+def vmOps(action: str, vm: str = "default"):
+    """
+    Handle VM operations
+
+    :param str action: What action to run - should be start or stop
+    :param str vm: Name of VM to act on
+    """
+    logging.critical("vmOps")
+    logging.debug("action: %s" % action)
+    logging.debug("vm: %s" % vm)
+
+    env = prep_environment_for_lima(vm=vm)
+
+    command = ["limactl", action, vm]
+    logging.warning("command: %s", command)
+    displayNotification(title="Lima VM", message=" ".join(command))
+    output = runCommand(command=command, env=env)
+    logging.debug(output)
+    logging.warning("%s complete", action)
+    displayNotification(title="Task completed", message=" ".join(command))
+
+
+# Actual Xbar-compatible output
+
+
+def xbar_icon(vms: dict = {}):
+    """
+    Determine icon to display in menubar.
+
+    We display a running menubar icon if at least one VM is running.
+
+    :param dict vms: Data about Lima VMs
+    """
+    menuBarIcon = f"🐋 ⛔ | color={STOPPED_VM_COLOR}"
+    for vm in vms:
+        logging.debug("vm: %s", vm)
+        if vms[vm]["status"] == "Running":
+            menuBarIcon = f"🐋 🏃 | color={RUNNING_VM_COLOR}"
+            break
+    print(menuBarIcon)
+    print("---")
+
+
+def aboutMenu():
+    """
+    Print details about plugin
+    """
+    limaVersion = subprocess.run(
+        ["/usr/local/bin/limactl", "--version"], stdout=subprocess.PIPE
+    ).stdout.decode("utf-8")
+
+    print("About…")
+    print("-- Lima version: %s" % limaVersion.strip())
+    print("-- lima-xbar version: %s" % VERSION)
+    print("-- force rescan | bash=limactl param1=list terminal=false refresh=true")
+
+
+def vmContainerSubMenu(vm: str = "default"):
+    """
+    Generate a container submenu for a VM
+
+    :param str vm:
+    """
+    # plugin_f = __file__.replace(" ", "\ ")
+    plugin_f = __file__
+    containers = listContainers(vm=vm)
+
+    logging.debug("containers: %s", containers)
+
+    print("-- Containers")
+    for container in containers:
+        if containers[container]["Status"] == "Up":
+            print("---- %s | color=%s" % (container, RUNNING_VM_COLOR))
+            print("------ Running")
+            print(
+                f'------ stop | shell="{plugin_f}" param1="--vm" param2={vm} param3="--container-action" param4=stop param5="--target" param6={container} terminal=false refresh=true'
+            )
+            print(
+                f'------ kill | shell="{plugin_f}" param1="--vm" param2={vm} param3="--container-action" param4=kill param5="--target" param6={container} terminal=false refresh=true'
+            )
+            print(
+                f'------ pause | shell="{plugin_f}" param1="--vm" param2={vm} param3="--container-action" param4=pause param5="--target" param6={container} terminal=false refresh=true'
+            )
+        else:
+            print("---- %s | color=%s" % (container, STOPPED_VM_COLOR))
+            print("------ Stopped")
+            print(
+                f'------ rm | shell="{plugin_f}" param1="--vm" param2={vm} param3="--container-action" param4=rm param5="--target" param6={container} terminal=false refresh=true'
+            )
+            print(
+                f'------ start | shell="{plugin_f}" param1="--vm" param2={vm} param3="--container-action" param4=start param5="--target" param6={container} terminal=false refresh=true'
+            )
+            print(
+                f'------ unpause | shell="{plugin_f}" param1="--vm" param2={vm} param3="--container-action" param4=unpause param5="--target" param6={container} terminal=false refresh=true'
+            )
+
+
+def vmImageSubMenu(vm: str = "default"):
+    """
+    Generate an image submenu for a VM
+
+    :param str vm:
+    """
+    plugin_f = __file__
+    images = listImages(vm=vm)
+
+    logging.debug("images: %s", images)
+
+    print("-- Images")
+    for image in images:
+        print("---- %s" % image)
+        print(
+            f'------ pull | bash="{plugin_f}" param1=--vm param2={vm} param3=--image-action=pull param4=--target={image} terminal=false refresh=true'
+        )
+        print(
+            f'------ rm | bash="{plugin_f}" param1=--vm param2={vm} param3=--image-action=rm param4=--target={image} terminal=false refresh=true'
+        )
+
+
+def vmMenu(vmData: dict = {}):
+    """
+    Generate submenus for all the VMs, running or not
+    """
+    plugin_f = __file__
+    logging.debug("vmMenu")
+    logging.debug("vmData: %s", vmData)
+
+    for vm in vmData:
+
+        logging.debug("status %s", vmData[vm]["status"])
+        if vmData[vm]["status"] != "Running":
+            print("%s VM is stopped | color=%s" % (vm, STOPPED_VM_COLOR))
+            print(
+                f"""-- ⛔ Start {vm} VM | shell=\"{plugin_f}\" param1='--vm=default' param2='--vm-action=start' terminal=false refresh=true"""
+            )
+        else:
+            print(f"{vm} VM (running) | color={RUNNING_VM_COLOR}")
+            print(
+                f"""-- ⛔ Stop {vm} VM | color={STOPPED_VM_COLOR} bash="{__file__}" shell=\"{plugin_f}\" param1='--vm=default' param2='--vm-action=stop' terminal=false refresh=true"""
+            )
+            vmContainerSubMenu(vm=vm)
+            vmImageSubMenu(vm=vm)
+
+
+def xbarMenu():
+    """
+    Generate Xbar Menu
+    """
+    vms = listVMs()
+
+    xbar_icon(vms)
+    aboutMenu()
+    vmMenu(vmData=vms)
+
+
+def main():
+    """
+    Main program driver
+    """
+    logSetup(level="DEBUG")
+
+    logging.debug("plugin path: %s" % __file__)
+
+    cli = parseCLI()
+    logging.warning("VERSON: %s", VERSION)
+
+    logging.debug("cli: %s" % cli)
+
+    logging.warning("argv[0] %s" % sys.argv[0])
+
+    if cli.container_action:
+        logging.info("container action: %s", cli.container_action)
+        containerOps(vm=cli.vm, action=cli.container_action, container=cli.target)
+
+    if cli.image_action:
+        logging.info("image action: %s", cli.image_action)
+        imageOps(action=cli.image_action, image=cli.target, vm=cli.vm)
+
+    if cli.vm_action:
+        logging.info("vm action: %s", cli.vm_action)
+        vmOps(action=cli.vm_action, vm=cli.vm)
+
+    xbarMenu()
+
+
+if __name__ == "__main__":
+    main()

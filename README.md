@@ -23,13 +23,11 @@
 
 ![Screen shot of Lima menu with a running vm](https://raw.githubusercontent.com/unixorn/lima-xbar-plugin/main/pix/limactl-screen-shot.png)
 
-This plugin is compatible with [xbar](https://xbarapp.com/) and [SwiftBar](https://github.com/swiftbar/SwiftBar), and lets you start and stop lima VMs from the menubar.
+This plugin is compatible with [xbar](https://xbarapp.com/) and [SwiftBar](https://github.com/swiftbar/SwiftBar), and provides a menubar app that creates submenus for each Lima VM on your machine. For each VM, you can start/stop the VM, stop (and start or remove stopped containers) containers, and pull or remove images from the VM.
 
 ## Installation
 
 Copy `lima-plugin` to `~/Library/Application\ Support/xbar/plugins/lima-plugin.30s`, or run `make install`
 ### Dependencies
 
-- [xbar](https://xbarapp.com/) - Allows you to make custom menubar apps with just scripts
-
-- [jq](https://stedolan.github.io/jq/) - `brew install jq` - Used to parse the output of `limactl`
+- [xbar](https://xbarapp.com/) or [SwiftBar](https://github.com/swiftbar/SwiftBar) - Both allow you to make custom menubar apps with simple scripts.
