@@ -377,6 +377,7 @@ def aboutMenu():
 
     print("About…")
     print("-- Lima version: %s" % limaVersion.strip())
+    print("-- Lima home | href=https://github.com/lima-vm/lima")
     print("-- lima-xbar version: %s" % VERSION)
     print("-- force rescan | bash=limactl param1=list terminal=false refresh=true")
 
