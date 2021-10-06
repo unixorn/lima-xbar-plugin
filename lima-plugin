@@ -34,7 +34,7 @@ RUNNING_VM_COLOR = "#29cc00"
 # Stopped VM color (default red)
 STOPPED_VM_COLOR = "#ff0033"
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 
 def logSetup(level: str = "INFO"):
@@ -90,7 +90,7 @@ def parseCLI():
     parser.add_argument("--pull-new-image", action="store_true")
     parser.add_argument(
         "--vm-action",
-        choices=["start", "stop"],
+        choices=["start", "stop", "lima"],
         help="Action to perform on vm",
     )
     cliArgs = parser.parse_args()
@@ -348,6 +348,28 @@ def imageOps(action: str, image: str, vm: str = "default"):
     displayNotification(title="Task complete", message=" ".join(command))
 
 
+def limaCommand(vm: str):
+    """
+    Run an arbitrary command with lima
+
+    :param str vm: Which vm to run the command in
+    """
+    env = prep_environment_for_lima(vm=vm)
+    user_command = inputDialog(
+        user_prompt=f"What lima command do you want to run in the {vm} VM?"
+    )
+
+    if user_command != "":
+        lima_command = ["lima"] + user_command.split()
+        displayNotification(
+            title=f"Running '{user_command}'", message=" ".join(lima_command)
+        )
+        runCommand(command=lima_command, env=env)
+        displayNotification(title=f"Ran '{user_command}' in {vm}", message="Completed")
+    else:
+        displayAlert(title="Error!", message="No nerdctl command specified")
+
+
 def vmOps(action: str, vm: str = "default"):
     """
     Handle VM operations
@@ -361,13 +383,19 @@ def vmOps(action: str, vm: str = "default"):
 
     env = prep_environment_for_lima(vm=vm)
 
-    command = ["limactl", action, vm]
-    logging.warning("command: %s", command)
-    displayNotification(title="Lima VM", message=" ".join(command))
-    output = runCommand(command=command, env=env)
-    logging.debug(output)
-    logging.warning("%s complete", action)
-    displayNotification(title="Task completed", message=" ".join(command))
+    if action == "lima":
+        limaCommand(vm=vm)
+
+    if action in ["start", "stop"]:
+        command = ["limactl", action, vm]
+        logging.info("command: %s", command)
+
+        displayNotification(title="Lima VM", message=" ".join(command))
+        output = runCommand(command=command, env=env)
+        logging.debug(output)
+
+        logging.info("%s complete", action)
+        displayNotification(title="Task completed", message=" ".join(command))
 
 
 def pullNewImage(vm: str = "default"):
@@ -401,7 +429,7 @@ def xbar_icon(vms: dict = {}):
 
     :param dict vms: Data about Lima VMs
     """
-    menuBarIcon = f"🐋 ⛔ | color={STOPPED_VM_COLOR}"
+    menuBarIcon = f"🐋❗ | color={STOPPED_VM_COLOR}"
     for vm in vms:
         logging.debug("vm: %s", vm)
         if vms[vm]["status"] == "Running":
@@ -432,7 +460,6 @@ def vmContainerSubMenu(vm: str = "default"):
 
     :param str vm:
     """
-    # plugin_f = __file__.replace(" ", "\ ")
     plugin_f = __file__
     containers = listContainers(vm=vm)
 
@@ -505,12 +532,15 @@ def vmMenu(vmData: dict = {}):
         if vmData[vm]["status"] != "Running":
             print("%s VM is stopped | color=%s" % (vm, STOPPED_VM_COLOR))
             print(
-                f"""-- ⛔ Start {vm} VM | shell=\"{plugin_f}\" param1='--vm=default' param2='--vm-action=start' terminal=false refresh=true"""
+                f"""-- ▶️ Start {vm} VM | shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=start' terminal=false refresh=true"""
             )
         else:
             print(f"{vm} VM (running) | color={RUNNING_VM_COLOR}")
             print(
-                f"""-- ⛔ Stop {vm} VM | color={STOPPED_VM_COLOR} bash="{__file__}" shell=\"{plugin_f}\" param1='--vm=default' param2='--vm-action=stop' terminal=false refresh=true"""
+                f"""-- ❌ Stop {vm} VM | color={STOPPED_VM_COLOR} shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=stop' terminal=false refresh=true"""
+            )
+            print(
+                f"""-- 🐚 Run lima command | shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=lima' terminal=false refresh=true"""
             )
             vmContainerSubMenu(vm=vm)
             vmImageSubMenu(vm=vm)
