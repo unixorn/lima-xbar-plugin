@@ -27,6 +27,7 @@ This plugin is compatible with [xbar](https://xbarapp.com/) and [SwiftBar](https
 - start/stop the VM
 - stop, start or remove stopped containers
 - pull or remove images from the VM
+- Run an arbitrary command inside the VM with `lima`
 
 ### Screen shots
 
