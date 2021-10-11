@@ -34,7 +34,7 @@ RUNNING_VM_COLOR = "#29cc00"
 # Stopped VM color (default red)
 STOPPED_VM_COLOR = "#ff0033"
 
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 
 def logSetup(level: str = "INFO"):
@@ -185,12 +185,7 @@ def listContainers(vm: str = "default"):
     :return dict:
     """
     containers = {}
-    if vm != "default":
-        env = dict(os.environ, LIMA_INSTANCE=vm)
-    else:
-        env = dict(os.environ)
-    newpath = "%s:/usr/local/bin" % env["PATH"]
-    env["PATH"] = newpath
+    env = prep_environment_for_lima(vm=vm)
 
     command = [
         "lima",
@@ -223,13 +218,7 @@ def listImages(vm: str = "default"):
     :return dict:
     """
     images = {}
-    if vm != "default":
-        env = dict(os.environ, LIMA_INSTANCE=vm)
-    else:
-        env = dict(os.environ)
-
-    newpath = "%s:/usr/local/bin" % env["PATH"]
-    env["PATH"] = newpath
+    env = prep_environment_for_lima(vm=vm)
 
     command = ["lima", "nerdctl", "images", "--format", "{{json .}}"]
     raw = jsonCommand(command=command, env=env)
@@ -262,9 +251,7 @@ def listVMs():
     """
     vmList = {}
 
-    env = dict(os.environ)
-    newpath = "%s:/usr/local/bin" % env["PATH"]
-    env["PATH"] = newpath
+    env = prep_environment_for_lima()
 
     vmRaw = subprocess.run(
         ["limactl", "list", "--json"], env=env, stdout=subprocess.PIPE
@@ -283,17 +270,24 @@ def prep_environment_for_lima(vm: str = "default", env: dict = dict(os.environ))
     """
     Set up an environment dictionary we can use to run a lima command.
 
-    Also adds /usr/local/bin to $PATH
+    Also adds /usr/local/bin, /opt/homebrew/bin and /opt/local/bin to $PATH
+    if they exist and are directories.
 
     :param str vm: VM to work in
     :param dict env: Environment variables to base returned environment on
 
-    :return dict: Environment dictionary, with /usr/local/bin added to $PATH
+    :return dict: Environment dictionary, with extra bindirs added to $PATH
     """
-    newpath = "%s:/usr/local/bin" % env["PATH"]
-    env["PATH"] = newpath
+    extrapaths = ["/usr/local/bin", "/opt/homebrew/bin", "/opt/local/bin"]
+    for p in extrapaths:
+        if os.path.isdir(p):
+            logging.info("Adding %s to $PATH", p)
+            newpath = "%s:%s" % (env["PATH"], p)
+            env["PATH"] = newpath
+    logging.info("New path: %s", env["PATH"])
 
     if vm != "default":
+        logging.info("Setting LIMA_INSTANCE to %s", vm)
         env["LIMA_INSTANCE"] = vm
     return env
 
@@ -443,8 +437,9 @@ def aboutMenu():
     """
     Print details about plugin
     """
+    env = prep_environment_for_lima()
     limaVersion = subprocess.run(
-        ["/usr/local/bin/limactl", "--version"], stdout=subprocess.PIPE
+        ["limactl", "--version"], stdout=subprocess.PIPE, env=env
     ).stdout.decode("utf-8")
 
     print("About…")
