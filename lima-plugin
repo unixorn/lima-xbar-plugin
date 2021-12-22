@@ -34,7 +34,7 @@ RUNNING_VM_COLOR = "#29cc00"
 # Stopped VM color (default red)
 STOPPED_VM_COLOR = "#ff0033"
 
-VERSION = "1.3.1"
+VERSION = "1.3.2"
 
 
 def logSetup(level: str = "INFO"):
@@ -72,7 +72,7 @@ def parseCLI():
         type=str.upper,
         help="set log level",
         choices=["DEBUG", "INFO", "ERROR", "WARNING", "CRITICAL"],
-        default="INFO",
+        default="CRITICAL",
     )
     parser.add_argument(
         "--vm", "--virtual-machine", type=str, help="Which vm to use", default="default"
@@ -325,7 +325,7 @@ def imageOps(action: str, image: str, vm: str = "default"):
     :param str image: What image to do the action on
     :param str vm: Which VM is the image in?
     """
-    logging.critical("imageOps")
+    logging.info("imageOps")
     logging.info("action: %s" % action)
     logging.info("image: %s" % image)
     logging.info("vm: %s" % vm)
@@ -371,7 +371,7 @@ def vmOps(action: str, vm: str = "default"):
     :param str action: What action to run - should be start or stop
     :param str vm: Name of VM to act on
     """
-    logging.critical("vmOps")
+    logging.info("vmOps")
     logging.debug("action: %s" % action)
     logging.debug("vm: %s" % vm)
 

@@ -21,3 +21,7 @@
 ## 1.3.1
 
 - Add `/opt/homebrew/bin` to the plugin's `$PATH` when it exists and is a directory.
+
+## 1.3.2
+
+- Swiftbar started capturing `stderr` in addition to `stdout`, causing log messages to spam the menu bar. Default to log level critical so we don't spam log messages (that no one was seeing anyway) except when we're testing.
