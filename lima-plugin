@@ -5,7 +5,7 @@
 # Copyright 2021, Joe Block <jpb@unixorn.net>
 #
 # <xbar.title>Lima Control</xbar.title>
-# <xbar.version>v1.0</xbar.version>
+# <xbar.version>v1.3.2</xbar.version>
 # <xbar.author>Joe Block</xbar.author>
 # <xbar.author.github>unixorn</xbar.author.github>
 # <xbar.desc>Control Lima VM</xbar.desc>
