@@ -34,7 +34,7 @@ RUNNING_VM_COLOR = "#29cc00"
 # Stopped VM color (default red)
 STOPPED_VM_COLOR = "#ff0033"
 
-VERSION = "1.3.2"
+VERSION = "1.3.3"
 
 
 def logSetup(level: str = "INFO"):
@@ -270,15 +270,26 @@ def prep_environment_for_lima(vm: str = "default", env: dict = dict(os.environ))
     """
     Set up an environment dictionary we can use to run a lima command.
 
-    Also adds /usr/local/bin, /opt/homebrew/bin and /opt/local/bin to $PATH
-    if they exist and are directories.
+    Also adds /usr/local/{s}bin, /opt/homebrew/{s}bin, /opt/local/{s}bin,
+    ~/homebrew/{s}bin and ~/{s}bin to $PATH if they exist and are directories.
 
     :param str vm: VM to work in
     :param dict env: Environment variables to base returned environment on
 
     :return dict: Environment dictionary, with extra bindirs added to $PATH
     """
-    extrapaths = ["/usr/local/bin", "/opt/homebrew/bin", "/opt/local/bin"]
+    extrapaths = [
+        "/opt/homebrew/bin",
+        "/opt/homebrew/sbin",
+        "/opt/local/bin",
+        "/opt/local/sbin",
+        "/usr/local/bin",
+        "/usr/local/sbin",
+        f"{os.environ.get('HOME')}/bin",
+        f"{os.environ.get('HOME')}/homebrew/bin",
+        f"{os.environ.get('HOME')}/homebrew/sbin",
+        f"{os.environ.get('HOME')}/sbin",
+    ]
     for p in extrapaths:
         if os.path.isdir(p):
             logging.info("Adding %s to $PATH", p)
