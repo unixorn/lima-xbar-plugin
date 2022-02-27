@@ -25,3 +25,13 @@
 ## 1.3.2
 
 - Swiftbar started capturing `stderr` in addition to `stdout`, causing log messages to spam the menu bar. Default to log level critical so we don't spam log messages (that no one was seeing anyway) except when we're testing.
+
+## 1.3.3
+
+dd more candidate directories to be added to $PATH
+
+- Check for `~/homebrew/bin` and `~/homebrew/sbin` to cope when homebrew
+  is installed in a user's home directory. Closes https://github.com/unixorn/lima-xbar-plugin/issues/28
+- While we're in there, check for `/usr/local/sbin`,
+  `/opt/homebrew/sbin`, `/opt/local/sbin`, `~/bin` and `~/sbin`
+  directories too.
