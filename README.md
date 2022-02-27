@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![Awesomebot](https://github.com/unixorn/lima-xbar-plugin/actions/workflows/awesomebot.yml/badge.svg)
-![Superlinter](https://github.com/unixorn/lima-xbar-plugin/actions/workflows/superlinter.yml/badge.svg)
+![Megalinter](https://github.com/unixorn/lima-xbar-plugin/actions/workflows/megalinter.yml/badge.svg)
 ![codeql](https://github.com/unixorn/lima-xbar-plugin/actions/workflows/codeql-analysis.yml/badge.svg)
 [![GitHub stars](https://img.shields.io/github/stars/unixorn/lima-xbar-plugin.svg)](https://github.com/unixorn/lima-xbar-plugin/stargazers)
 
