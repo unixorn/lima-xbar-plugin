@@ -12,7 +12,7 @@ requirements:
 
 f: format
 format:
-	black lima-plugin *.py
+	poetry run black lima-plugin
 
 t: test
 test: format
