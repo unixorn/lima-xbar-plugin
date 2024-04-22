@@ -35,7 +35,26 @@ This plugin is compatible with [xbar](https://xbarapp.com/) and [SwiftBar](https
 
 ![Screen shot of xbar menu with image submenu for a running vm](https://raw.githubusercontent.com/unixorn/unixorn.github.io/master/images/lima-xbar/images-submenu.png)
 
+### Theme
 
+Rename the plugin file to lima-plugin.[theme].[time_ext] to switch to the specified theme
+
+e.g.
+ - lima-plugin.10s                 -> default
+ - lima-plugin.default.10s         -> default
+ - lima-plugin.text.10s            -> text
+ - lima-plugin.sf_simple.10s       -> sf_simple
+ - lima-plugin.sf_simple.10s.py    -> sf_simple
+
+Theme default:
+![91713774470_ pic](https://github.com/unixorn/lima-xbar-plugin/assets/13330108/33b597b5-aff8-4fae-a56e-fe7b033a59ab)
+
+Theme text:
+![101713774523_ pic](https://github.com/unixorn/lima-xbar-plugin/assets/13330108/33a48a6f-fc2a-4dc1-93b6-17d9bd5e2b37)
+
+Theme sf_simple:
+![111713774589_ pic](https://github.com/unixorn/lima-xbar-plugin/assets/13330108/33d76913-91d7-444d-bf38-06a19885a3b7)
+![121713774642_ pic](https://github.com/unixorn/lima-xbar-plugin/assets/13330108/acfba52b-8d59-455f-83c5-1904ce196f8b)
 
 ## Installation
 
