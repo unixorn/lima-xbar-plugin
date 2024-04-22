@@ -47,14 +47,14 @@ e.g.
  - lima-plugin.sf_simple.10s.py    -> sf_simple
 
 Theme default:
-![91713774470_ pic](https://raw.githubusercontent.com/exculibar/lima-xbar-plugin/custom_icons/screenshots/91713774470_.pic.jpg)
+![Theme default](https://raw.githubusercontent.com/exculibar/lima-xbar-plugin/custom_icons/screenshots/91713774470_.pic.jpg)
 
 Theme text:
-![101713774523_ pic](https://raw.githubusercontent.com/exculibar/lima-xbar-plugin/custom_icons/screenshots/101713774523_.pic.jpg)
+![Theme text](https://raw.githubusercontent.com/exculibar/lima-xbar-plugin/custom_icons/screenshots/101713774523_.pic.jpg)
 
 Theme sf_simple:
-![111713774589_ pic](https://raw.githubusercontent.com/exculibar/lima-xbar-plugin/custom_icons/screenshots/111713774589_.pic.jpg)
-![121713774642_ pic](https://raw.githubusercontent.com/exculibar/lima-xbar-plugin/custom_icons/screenshots/121713774642_.pic.jpg)
+![Theme sf_simple 1](https://raw.githubusercontent.com/exculibar/lima-xbar-plugin/custom_icons/screenshots/111713774589_.pic.jpg)
+![Theme sf_simple 2](https://raw.githubusercontent.com/exculibar/lima-xbar-plugin/custom_icons/screenshots/121713774642_.pic.jpg)
 
 ## Installation
 
