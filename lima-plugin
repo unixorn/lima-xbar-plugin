@@ -63,7 +63,9 @@ MENU_TITLE_ICON_CONF = {
             },
             'vm': {
                 'start': (lambda vm: f"▶️ Start {vm} VM", ''),
-                'stop': (lambda vm: f"❌ Stop {vm} VM", ''),
+                'stop': (lambda vm: f"⭕️ Stop {vm} VM", ''),
+                'edit': (lambda vm: f"⚙️ Edit {vm} VM", ''),
+                'delete': (lambda vm: f"❌ Delete {vm} VM", ''),
                 'run': ('🐚 Run lima command', ''),
             },
             'image': {
@@ -93,7 +95,9 @@ MENU_TITLE_ICON_CONF = {
             },
             'vm': {
                 'start': (lambda vm: f"▶️ Start {vm} VM", ''),
-                'stop': (lambda vm: f"❌ Stop {vm} VM", ''),
+                'stop': (lambda vm: f"⭕️ Stop {vm} VM", ''),
+                'edit': (lambda vm: f"⚙️ Edit {vm} VM", ''),
+                'delete': (lambda vm: f"❌ Delete {vm} VM", ''),
                 'run': ('🐚 Run lima command', ''),
             },
             'image': {
@@ -122,7 +126,9 @@ MENU_TITLE_ICON_CONF = {
             },
             'vm': {
                 'start': (lambda vm: f"▶️ Start {vm} VM", ''),
-                'stop': (lambda vm: f"❌ Stop {vm} VM", ''),
+                'stop': (lambda vm: f"⭕️ Stop {vm} VM", ''),
+                'edit': (lambda vm: f"🔨 Edit {vm} VM", ''),
+                'delete': (lambda vm: f"❌ Delete {vm} VM", ''),
                 'run': ('🐚 Run lima command', ''),
             },
             'image': {
@@ -155,6 +161,8 @@ MENU_TITLE_ICON_CONF = {
             'vm': {
                 'start': (lambda vm: f"Start {vm} VM", 'sfimage=play.circle.fill'),
                 'stop': (lambda vm: f"Stop {vm} VM", 'sfimage=stop.circle.fill'),
+                'edit': (lambda vm: f"Edit {vm} VM", 'sfimage=gear'),
+                'delete': (lambda vm: f"Delete {vm} VM", 'sfimage=trash.circle.fill'),
                 'run': ('Run lima command', 'sfimage=command.circle.fill'),
             },
             'image': {
@@ -185,7 +193,9 @@ MENU_TITLE_ICON_CONF = {
             'vm': {
                 'start': (lambda vm: f"Start {vm} VM", 'image=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'),
                 'stop': (lambda vm: f"Stop {vm} VM", 'image=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'),
+                'edit': (lambda vm: f"Edit {vm} VM", 'image=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'),
                 'run': ('Run lima command', 'image=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'),
+                'delete': (lambda vm: f"Delete {vm} VM", ''),
             },
             'image': {
                 'pull_new': ('pull new image', ''),
@@ -214,7 +224,9 @@ MENU_TITLE_ICON_CONF = {
             'vm': {
                 'start': (lambda vm: f"Start {vm} VM", 'image=iVBORw0KGgoAAAANSUhEUgAAACkAAAAoCAYAAABjPNNTAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAhGVYSWZNTQAqAAAACAAFARIAAwAAAAEAAQAAARoABQAAAAEAAABKARsABQAAAAEAAABSASgAAwAAAAEAAgAAh2kABAAAAAEAAABaAAAAAAAAAJAAAAABAAAAkAAAAAEAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAKaADAAQAAAABAAAAKAAAAADveEx6AAAACXBIWXMAABYlAAAWJQFJUiTwAAACMmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczpleGlmPSJodHRwOi8vbnMuYWRvYmUuY29tL2V4aWYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iPgogICAgICAgICA8ZXhpZjpQaXhlbFlEaW1lbnNpb24+MTU5PC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxYRGltZW5zaW9uPjE2MTwvZXhpZjpQaXhlbFhEaW1lbnNpb24+CiAgICAgICAgIDxleGlmOkNvbG9yU3BhY2U+MTwvZXhpZjpDb2xvclNwYWNlPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4K9ogctQAABUFJREFUWAm9mEuIXEUUhrtnJiI6oKLCEDFikKijoqL4Ioq4cqOi4GMhiAsJLnSVoIK4jI8oCG4UUTDowmwUFVcKIgmBgBI04qjoQk0QJSrG1ySZab+vbp2mmHT3vben44H/nqpbp079depU1e3udhpIr9ebwmyq2+0e1Zz6iagbwE3ganAROBOUcoTKd2Av2Ak+oP8COgk+ZsJfvBtb6yw6U14PngU/gLayTIePwb3ASTvZ6SjHGK00nbsgEUSfCl4AR0DIUQqHgVoCg2SJl/Yp+2m3AO4MQpT7gYh3tZpOU6CrIfoO8AsIkZiDtxUn4oRKwu9QPyOPs6aWWBjQKS1F7ujShkhuWMTCpqkuyRqAaxsTxbgkuCOP6MzHiVzuPlI58ZBba4liaQ7GEr+Zey6Gh+Ooy+W/eSRRSMQm2fY/Eoy5u/yK2uMs7Xx1X2gIgrdriWg8qfxLDhs8IqLu/OCTVjbtYg9VGk6B9UuZuY3JoD+TwYUlXvcGN7V+K7HD4HzwTO49nXTB+vk82zKZ86uBqoz0pHZ+6fNiCTLydLrqKJxD/cHEutNJoc7lUcpI7wO/gzjj0rU5qlNNmz7Dx+PZtlpRSG7NsWoSxcidV3RCv7PAy7m/yvbVHFkRTVPwPMcwJ43c3VaQKgeq8rBn5ODnGpDP+8EDFP3Q2AX053nrB0bYUmwsRs6+crnHXjq7BqwHy7mOGilV+Dsdv4SM5AlOFKJ7wEZe3QcOAFOgXD6qjSUulXTAW7kxd5VkGwn7HuRcmvRFQ3k7TjYAd6iRNLKeAqKpBMlL8LvOyhVNe46yg9wSMJ+M6l/gEeznwXvApRNNU8AVcFKu1rwkPZeUYF/VxnxCzqh6xa6hvABuwZXL9hWIFGiSq2GzQWJrgRK5VtVW8YSYKeAuNwWmKb+LuwvBY2AROFaQoDhQon1OkrPZZGIkY0jImQIeR2nHU36Ktrtye+R0mK/UwWdWksF4pdFE65LNDiMoTf2n78c/svXEyeblhl/K01nq2xjrjTxe3R4IPoc0/HHSJCGTLgmjB6j27meMb8DmYqxYzvzqGBXt+yUZPzPrcuQYLytfQCZ29XKO3nW8243dq2AOxBEUBFa6KOsR6a8t7ClbxiinZYGM52Ps6rXUX8OX16Q3mh8NBiGOIIojRZ9y+xN84a77CChN7u3KsnrGTD1m4tbx3RbwBDgJSMwBHaeN2E8+nzLxn/xU+4SKn1wuQexAikMlEvpfLei/CDxmbqP6JfCYkaBLK+m2k6dLmpz6LR8Rje1WEGdQJ5FPV2kIuUvB+xTfBt7ZkXcu7ThiEOz7N9jRd8Agp4NfgRLfc1Vt9PN7mr0GFXWU04sxH/FN+6IE8TETR8VB6s9l1vFlnKtDlTM+G7ic9lGPs7R060tE0atza367LNO0fGg3gL/UFO/dJmIutol8nc/4nf+oBDFOKdMnmJPf48JzLTZH5J99jreYy5LaBZeNEExjUw4u1drLgsaH8nSN5iSjlN0OVLFyB2mdyzwGpw4GqQH9dHZl59X8qMpuRqrYKC71ZZng8HMVI6+1dCyhnwQhMdOoT0pHDh7C4ZWZYP3RhXFJdFPBxhlPKqrlCu3D77mNCWqoZKKx9JdT3wtCJOt52DZftS/J6c9/j2Oc4Utc0Rr8xEE/9JQfBgdAKQ4qJF1GWULWy3aqffmQkidJEsqDN0kY1OnSAeWTgSmwG7SNpDv3dXB9jEl5BtQec7UGOsyO/EHVv414dwFNDug/F/NgHTgNGJV/wM/gW/AZ2Ak8/35D68/NSbX/k8LXQ+U/4OgYn4lIX7wAAAAASUVORK5CYII='),
                 'stop': (lambda vm: f"Stop {vm} VM", 'image=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'),
+                'edit': (lambda vm: f"Edit {vm} VM", 'image=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'),
                 'run': ('Run lima command', 'image=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'),
+                'delete': (lambda vm: f"Delete {vm} VM", ''),
             },
             'image': {
                 'pull_new': ('pull new image', ''),
@@ -246,7 +258,9 @@ MENU_TITLE_ICON_CONF = {
             'vm': {
                 'start': (lambda vm: f"Start {vm} VM", ''),
                 'stop': (lambda vm: f"Stop {vm} VM", ''),
+                'edit': (lambda vm: f"Edit {vm} VM", ''),
                 'run': ('Run lima command', ''),
+                'delete': (lambda vm: f"Delete {vm} VM", ''),
             },
             'image': {
                 'pull_new': ('pull new image', ''),
@@ -276,7 +290,9 @@ MENU_TITLE_ICON_CONF = {
             'vm': {
                 'start': (lambda vm: f"Start {vm} VM", ''),
                 'stop': (lambda vm: f"Stop {vm} VM", ''),
+                'edit': (lambda vm: f"Edit {vm} VM", ''),
                 'run': ('Run lima command', ''),
+                'delete': (lambda vm: f"Delete {vm} VM", ''),
             },
             'image': {
                 'pull_new': ('pull new image', ''),
@@ -305,7 +321,9 @@ MENU_TITLE_ICON_CONF = {
             'vm': {
                 'start': (lambda vm: f"Start {vm} VM", ''),
                 'stop': (lambda vm: f"Stop {vm} VM", ''),
+                'edit': (lambda vm: f"Edit {vm} VM", ''),
                 'run': ('Run lima command', ''),
+                'delete': (lambda vm: f"Delete {vm} VM", ''),
             },
             'image': {
                 'pull_new': ('pull new image', ''),
@@ -430,7 +448,7 @@ def parseCLI():
     parser.add_argument("--pull-new-image", action="store_true")
     parser.add_argument(
         "--vm-action",
-        choices=["start", "stop", "lima"],
+        choices=["create", "edit", "start", "stop", "lima", "delete"],
         help="Action to perform on vm",
     )
     cliArgs = parser.parse_args()
@@ -731,8 +749,47 @@ def vmOps(action: str, vm: str = "default"):
     if action == "lima":
         limaCommand(vm=vm)
 
-    if action in ["start", "stop"]:
-        command = ["limactl", action, vm]
+    if action in ["create", "edit", "start", "stop", "delete"]:
+        if action in ["create", "edit"]:
+            rosetta = None
+            if action == "create":
+                create_vm = inputDialog(
+                    user_prompt=f"Profile name for VM? (default=default)"
+                )
+                if create_vm:
+                    vm = create_vm
+                rosetta = inputDialog(
+                    user_prompt=f"(Can not be changed once created) Use rosetta2 or not(y/n)? Requirement Lima >= 0.14, macOS >= 13.0, ARM, and rosetta2 installed.(default=n)"
+                )
+            command = ["limactl", "start", vm]
+            cpu = inputDialog(
+                user_prompt=f"Number of CPUs for {vm} VM? default=min(4, host CPU cores)"
+            )
+            memory = inputDialog(
+                user_prompt=f"Memory in GiB for {vm} VM? default=min(4, half of host memory)"
+            )
+            disk = inputDialog(
+                user_prompt=f"Disk size in GiB for {vm} VM? (default=100)"
+            )
+            if rosetta == 'y':
+                command.extend(["--vm-type=vz", "--rosetta"])
+            if cpu:
+                command.extend(["--cpus", cpu])
+            if memory:
+                command.extend(["--memory", memory])
+
+            if action == "create":
+                if disk:
+                    command.extend(["--disk", disk])
+            if action == "edit":
+                command_stop = ["limactl", "stop", vm]
+                runCommand(command=command_stop, env=env)
+                if disk:
+                    settings = f'.disk = \"{disk}GiB\"'
+                command_edit_disk = ["limactl", "edit", vm, f"--set={settings}"]
+                runCommand(command=command_edit_disk, env=env)
+        else:
+            command = ["limactl", action, vm]
         logging.info("command: %s", command)
 
         displayNotification(title="Lima VM", message=" ".join(command))
@@ -877,25 +934,37 @@ def vmMenu(vmData: dict = {}):
     logging.debug("vmMenu")
     logging.debug("vmData: %s", vmData)
 
-    for vm in vmData:
+    if len(vmData)>0:
+        for vm in vmData:
 
-        logging.debug("status %s", vmData[vm]["status"])
-        if vmData[vm]["status"] != "Running":
-            print("%s VM is stopped | color=%s" % (vm, STOPPED_VM_COLOR))
-            
-            start_params = f"""shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=start' terminal=false refresh=true"""
-            print(f"-- {buildMenuItem( getMenuTitle(('vm', (vm,)), 'start'), start_params)}")
-        else:
-            print(f"{vm} VM (running) | color={RUNNING_VM_COLOR}")
-            
-            stop_params = f"""color={STOPPED_VM_COLOR} shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=stop' terminal=false refresh=true"""
-            print(f"-- {buildMenuItem( getMenuTitle(('vm', (vm,)), 'stop'), stop_params)}")
-            
-            run_params = f"""shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=lima' terminal=false refresh=true"""
-            print(f"-- {buildMenuItem( getMenuTitle(('vm', (vm,)), 'run'), run_params)}")
-            
-            vmContainerSubMenu(vm=vm)
-            vmImageSubMenu(vm=vm)
+            logging.debug("status %s", vmData[vm]["status"])
+            edit_params = f"""shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=edit' terminal=false refresh=true"""
+            info = f"CPUS={vmData[vm]['cpus']}, MEMORY={vmData[vm]['memory']//1073741824}GiB, DISK={vmData[vm]['disk']//1073741824}GiB"
+            if vmData[vm]["status"] != "Running":
+                print("%s VM is stopped | color=%s" % (vm, STOPPED_VM_COLOR))
+                print(f"-- {info}")
+
+                delete_params = f"""shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=delete' terminal=false refresh=true"""
+                print(f"---- {buildMenuItem( getMenuTitle(('vm', (vm,)), 'delete'), delete_params)}")
+
+                start_params = f"""shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=start' terminal=false refresh=true"""
+                print(f"-- {buildMenuItem( getMenuTitle(('vm', (vm,)), 'start'), start_params)}")
+                print(f"-- {buildMenuItem( getMenuTitle(('vm', (vm,)), 'edit'), edit_params)}")
+            else:
+                print(f"{vm} VM (running) | color={RUNNING_VM_COLOR}")
+                print(f"-- {info}")
+
+                stop_params = f"""color={STOPPED_VM_COLOR} shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=stop' terminal=false refresh=true"""
+                print(f"-- {buildMenuItem( getMenuTitle(('vm', (vm,)), 'stop'), stop_params)}")
+
+                run_params = f"""shell=\"{plugin_f}\" param1='--vm={vm}' param2='--vm-action=lima' terminal=false refresh=true"""
+                print(f"-- {buildMenuItem( getMenuTitle(('vm', (vm,)), 'run'), run_params)}")
+
+                vmContainerSubMenu(vm=vm)
+                vmImageSubMenu(vm=vm)
+    print(
+        f"""Create new VM | shell=\"{plugin_f}\" param1='--vm-action=create' terminal=false refresh=true"""
+    )
 
 
 def xbarMenu():
