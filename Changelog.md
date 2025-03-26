@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Lima Xbar/Swiftbar changelog](#lima-xbarswiftbar-changelog)
+  - [0.0.1 - 1.0.0](#001---100)
+  - [1.1.1](#111)
+  - [1.2.0](#120)
+  - [1.3.0](#130)
+  - [1.3.1](#131)
+  - [1.3.2](#132)
+  - [1.3.3](#133)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Lima Xbar/Swiftbar changelog
 
 ## 0.0.1 - 1.0.0

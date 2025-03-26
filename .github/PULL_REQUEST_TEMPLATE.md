@@ -1,3 +1,14 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Description](#description)
+- [Type of changes](#type-of-changes)
+- [Checklist](#checklist)
+- [License Acceptance](#license-acceptance)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 <!--- Provide a general summary of your changes in the Title above -->
 
 # Description

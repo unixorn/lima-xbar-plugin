@@ -12,6 +12,8 @@
 ## Table of Contents
 
 - [Description](#description)
+  - [Screen shots](#screen-shots)
+  - [Theme](#theme)
 - [Installation](#installation)
   - [Dependencies](#dependencies)
 
