@@ -434,7 +434,7 @@ def getCurrentTheme() -> str:
     """
     filename = __file__.split("/")[-1]
     ps = filename.split(".")
-    if len(ps) >= 3 and ps[1] in MENU_TITLE_ICON_CONF.keys():
+    if len(ps) >= 3 and ps[1] in MENU_TITLE_ICON_CONF:
         return ps[1]
     else:
         return "default"
